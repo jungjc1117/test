@@ -13,33 +13,34 @@
     <button id="saveButton">Save Settings</button>
 
     <script>
-        document.getElementById("saveButton").addEventListener("click", async () => {
-            const checkbox = document.getElementById("myCheckbox").checked;
-            const memo = document.getElementById("myMemo").value;
+    document.getElementById("saveButton").addEventListener("click", async () => {
+        const checkbox = document.getElementById("myCheckbox").checked;
+        const memo = document.getElementById("myMemo").value;
 
-            // Vercel 서버리스 함수의 URL을 호출합니다.
-            // 로컬 개발 시에는 /api/saveMemo, 배포 후에는 /api/saveMemo
-            const apiEndpoint = "/api/saveMemo"; 
+        const apiEndpoint = "/api/saveMemo"; 
 
-            try {
-                const res = await fetch(apiEndpoint, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ checkbox, memo }) // 데이터를 JSON 형식으로 보냅니다.
-                });
+        try {
+            const res = await fetch(apiEndpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ checkbox, memo })
+            });
 
-                if (res.ok) {
-                    alert("저장 완료!");
-                } else {
-                    const errorText = await res.json();
-                    alert("저장 실패: " + errorText.message);
-                }
-            } catch (error) {
-                alert("서버 연결 실패: " + error.message);
+            if (res.ok) {
+                alert("저장 완료!");
+            } else {
+                // res.ok가 false일 때, 서버가 보낸 텍스트 응답을 가져옵니다.
+                // 서버에서 JSON으로 응답하도록 했으므로 .json()을 사용합니다.
+                const errorData = await res.json(); 
+                alert("저장 실패: " + (errorData.message || "서버 오류"));
             }
-        });
-    </script>
+        } catch (error) {
+            // fetch 자체에서 발생하는 오류 (네트워크 문제 등)
+            alert("서버 연결 실패: " + error.message);
+        }
+    });
+</script>
 </body>
 </html>

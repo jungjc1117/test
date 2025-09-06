@@ -58,7 +58,11 @@ export default async (req, res) => {
 
     res.status(200).json({ message: "저장 완료!" });
   } catch (error) {
-    console.error("GitHub API 호출 실패:", error);
-    res.status(500).json({ message: "저장 실패: " + (error.message || error) });
-  }
+  console.error("GitHub API 호출 실패 (Type):", typeof error); // 오류 타입 확인
+  console.error("GitHub API 호출 실패 (Message):", error.message); // 오류 메시지 확인
+  console.error("GitHub API 호출 실패 (Full Error):", error); // 전체 오류 객체 확인
+
+  // 오류 응답 시에도 JSON 형식을 유지하도록 합니다.
+  res.status(500).json({ message: "저장 실패: " + (error.message || "알 수 없는 오류") });
+}
 };
