@@ -8,7 +8,7 @@ const branch = "main";
 
 const octokit = new Octokit({ auth: GITHUB_TOKEN });
 
-export default async (req, res) => {
+export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, message: "Method Not Allowed" });
   }
@@ -49,4 +49,4 @@ export default async (req, res) => {
     console.error("GitHub API 호출 실패:", error);
     return res.status(500).json({ success: false, message: error.message || "Unknown error" });
   }
-};
+}
