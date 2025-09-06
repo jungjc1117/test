@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Main Page</title>
+</head>
+<body>
+  <h2>Select Page</h2>
+  <select id="pageSelector">
+    <option value="">-- Choose a page --</option>
+    <option value="tableExample.html">Table Example</option>
+  </select>
+
+  <div id="content"></div>
+
+  <script>
+    const selector = document.getElementById("pageSelector");
+    const content = document.getElementById("content");
+
+    selector.addEventListener("change", async () => {
+      const page = selector.value;
+      if (page) {
+        const response = await fetch(page);
+        const html = await response.text();
+        content.innerHTML = html; // body에 tableExample.html 삽입
+      }
+    });
+  </script>
+</body>
+</html>
