@@ -13,6 +13,16 @@
         background: white;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
       }
+      .iframe-wrapper {
+        flex: 1; /* 각 iframe이 기본적으로 동일한 너비를 차지하도록 */
+        border: 1px solid #ddd; /* 구분선 */
+        box-sizing: border-box; /* 패딩과 테두리가 너비에 포함되도록 */
+        overflow: hidden; /* iframe 내부 스크롤은 유지 */
+      }
+      .iframe-wrapper:nth-child(3) {
+        flex: none; /* flex: 1; 설정을 해제하여 고정 너비 적용 */
+        width: 40px;
+      }
       h1 {
         text-align: center;
         color: #333;
@@ -42,6 +52,9 @@
         background-color: #f2f2f2;
         color: #555;
       }
+      td:nth-child(8) {
+        text-align: center;
+      }
       tr:hover {
         background-color: #f9f9f9;
       }
@@ -69,6 +82,20 @@
             height="1000px"
             frameborder="0"
           ></iframe>
+        </div>
+        <div id="iframe-wrapper">
+          <a
+            href="https://finviz.com/map.ashx"
+            target="_blank"
+            rel="noopener noreferrer"
+            >finviz</a
+          ><br />
+          <a
+            href="https://jungjc1117.github.io/test/daumnews.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            >daum</a
+          >
         </div>
       </div>
     </div>
@@ -2793,19 +2820,5 @@
       updateData();
       setInterval(updateData, 15000);
     </script>
-    <div>
-      <a
-        href="https://finviz.com/map.ashx"
-        target="_blank"
-        rel="noopener noreferrer"
-        >finviz</a
-      >
-      <a
-        href="https://jungjc1117.github.io/test/daumnews.html"
-        target="_blank"
-        rel="noopener noreferrer"
-        >daum</a
-      >
-    </div>
   </body>
 </html>
