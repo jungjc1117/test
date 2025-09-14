@@ -71,9 +71,9 @@
       };
 
       const chartParams = {
-        mrkt_tp : "000",  //000:전체, 001:코스피, 101:코스닥
-        mang_stk_incls : "1", //0:관리종목 미포함, 1:관리종목 포함
-        stex_tp : "3" //1:KRX, 2:NXT 3.통합
+        mrkt_tp: "000", //000:전체, 001:코스피, 101:코스닥
+        mang_stk_incls: "1", //0:관리종목 미포함, 1:관리종목 포함
+        stex_tp: "2", //1:KRX, 2:NXT 3.통합
       };
 
       async function fetchToken() {
@@ -144,17 +144,23 @@
 
       function updateTimestamp() {
         const now = new Date();
-        document.getElementById("timestamp").innerText = `최종 업데이트: ${now.toLocaleTimeString()}`;
+        document.getElementById(
+          "timestamp"
+        ).innerText = `최종 업데이트: ${now.toLocaleTimeString()}`;
       }
 
       async function updateData() {
         try {
-          document.getElementById("output").innerHTML = `<div class="loading">데이터 불러오는 중...</div>`;
+          document.getElementById(
+            "output"
+          ).innerHTML = `<div class="loading">데이터 불러오는 중...</div>`;
           const token = await fetchToken();
           const tradePricaData = await fetchTradePricaRanking(token);
 
           if (!tradePricaData || tradePricaData.length === 0) {
-            document.getElementById("output").innerHTML = `<div class="error">API에서 데이터를 가져오지 못했습니다. Mock API 응답을 확인해주세요.</div>`;
+            document.getElementById(
+              "output"
+            ).innerHTML = `<div class="error">API에서 데이터를 가져오지 못했습니다. Mock API 응답을 확인해주세요.</div>`;
             return;
           }
 
@@ -162,7 +168,9 @@
           updateTimestamp();
         } catch (e) {
           console.error("Error during updateData:", e);
-          document.getElementById("output").innerHTML = `<div class="error">데이터 로딩 중 에러가 발생했습니다: ${e.message}</div>`;
+          document.getElementById(
+            "output"
+          ).innerHTML = `<div class="error">데이터 로딩 중 에러가 발생했습니다: ${e.message}</div>`;
         }
       }
 
