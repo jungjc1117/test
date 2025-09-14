@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>조회순위/프로그램순위/거래대금순위</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+      }
+      .container {
+        margin: auto;
+        background: white;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        text-align: center;
+        color: #333;
+      }
+      #timestamp {
+        text-align: right;
+        font-size: 0.9em;
+        color: #777;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9em;
+      }
+      th,
+      td {
+        text-align: right;
+        border-bottom: 1px solid #ddd;
+      }
+      td
+      th {
+        background-color: #f2f2f2;
+        color: #555;
+      }
+      tr:hover {
+        background-color: #f9f9f9;
+      }
+      .loading {
+        text-align: center;
+        color: #888;
+      }
+      .error {
+        color: red;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div id="timestamp"></div>
+      <div id="output"></div>
+    </div>
+
+    <script>
+      const accessParams = {
+        grant_type: "client_credentials",
+        appkey: "qDyfxixyK38gUcyxhhiV8RKDD_LALkd-zBzDYcWJQP4",
+        secretkey: "egNgDJdNQkg6b8t5UBfGu-pAr0UJwlzGapfVwc73vn0",
+      };
+
+      const chartParams1 = {
+        qry_tp: "5",
+      };
+
+      const chartParams2 = {
+        trde_upper_tp: "2",
+        amt_qty_tp: "1",
+        mrkt_tp: "P00000",
+        stex_tp: "1",
+      };
+
+      const chartParams3 = {
+        mrkt_tp : "000",  //000:전체, 001:코스피, 101:코스닥
+        mang_stk_incls : "1", //0:관리종목 미포함, 1:관리종목 포함
+        stex_tp : "3" //1:KRX, 2:NXT 3.통합
+      };
+
+      async function fetchToken() {
+        const url = "https://mockapi.kiwoom.com/oauth2/token";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json;charset=UTF-8" },
+          body: JSON.stringify(accessParams),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        return data.token;
+      }
+
+      async function fetchTopStocks(token) {
+        const url = "https://mockapi.kiwoom.com/api/dostk/stkinfo";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            authorization: `Bearer ${token}`,
+            "api-id": "ka00198",
+            "cont-yn": "N",
+            "next-key": "",
+          },
+          body: JSON.stringify(chartParams1),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        return (data.item_inq_rank || []).map(item => ({
+          stk_cd: item.stk_cd,
+          stk_nm: item.stk_nm,
+          search_rank: item.bigd_rank,
+          price: item.past_curr_prc ? Math.abs(item.past_curr_prc) : null,
+          flu_rt: item.base_comp_chgr,
+        }));
+      }
+
+      async function fetchProgramTradeRanking(token) {
+        const url = "https://mockapi.kiwoom.com/api/dostk/stkinfo";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            authorization: `Bearer ${token}`,
+            "api-id": "ka90003",
+            "cont-yn": "N",
+            "next-key": "",
+          },
+          body: JSON.stringify(chartParams2),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        return (data.prm_netprps_upper_50 || []).map(item => ({
+          stk_cd: item.stk_cd,
+          stk_nm: item.stk_nm,
+          prm_rank: item.rank,
+          price: item.cur_prc ? Math.abs(item.cur_prc) : null,
+          flu_rt: item.flu_rt,
+          prm_netprps_amt: item.prm_netprps_amt
+        }));
+      }
+
+      async function fetchTradePricaRanking(token) {
+        const url = "https://mockapi.kiwoom.com/api/dostk/rkinfo";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            authorization: `Bearer ${token}`,
+            "api-id": "ka10032",
+            "cont-yn": "N",
+            "next-key": "",
+          },
+          body: JSON.stringify(chartParams3),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        return (data.trde_prica_upper || []).map(item => ({
+          stk_cd: item.stk_cd ? item.stk_cd.substring(0, 6) : null, // Normalize stk_cd
+          stk_nm: item.stk_nm,
+          now_rank: item.now_rank,
+          price: item.cur_prc ? Math.abs(item.cur_prc) : null,
+          flu_rt: item.flu_rt,
+          trde_prica: item.trde_prica
+        }));
+      }
+
+      function combineData(stockList, programTradeData, tradePricaData) { // Added tradePricaData parameter
+        const combinedMap = new Map();
+
+        // 1. 조회 순위 데이터를 먼저 Map에 추가
+        stockList.forEach(item => {
+          combinedMap.set(item.stk_cd, { ...item });
+        });
+
+        // 2. 프로그램 순매수 데이터를 병합
+        programTradeData.forEach(item => {
+          const existingItem = combinedMap.get(item.stk_cd);
+          if (existingItem) {
+            Object.assign(existingItem, item);
+            if (item.price) {
+              existingItem.price = item.price;
+            }
+            if (item.flu_rt) {
+              existingItem.flu_rt = item.flu_rt;
+            }
+          } else {
+            combinedMap.set(item.stk_cd, { ...item });
+          }
+        });
+
+        // 3. 거래대금 데이터를 병합
+        tradePricaData.forEach(item => { // Corrected variable name
+          const existingItem = combinedMap.get(item.stk_cd);
+          if (existingItem) {
+            Object.assign(existingItem, item); // Merge all properties from tradePricaData item
+            // Ensure price and flu_rt are updated if they are present in tradePricaData
+            // and were not set or need overriding from previous sources
+            if (item.price) {
+              existingItem.price = item.price;
+            }
+            if (item.flu_rt) {
+              existingItem.flu_rt = item.flu_rt;
+            }
+          } else {
+            combinedMap.set(item.stk_cd, { ...item });
+          }
+        });
+
+        return Array.from(combinedMap.values());
+      }
+
+      function renderTable(data) {
+        const table = document.createElement("table");
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>조회 R</th>
+              <th>종목코드</th>
+              <th>종목명</th>
+              <th>현재가</th>
+              <th>등락률 (%)</th>
+              <th>프로</th>
+              <th>거래</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.map(item => `
+              <tr>
+                <td>${item.search_rank || '-'}</td>
+                <td>${item.stk_cd || '-'}</td>
+                <td>${item.stk_nm || '-'}</td>
+                <td>${item.price || '-'}</td>
+                <td>${item.flu_rt || '-'}</td>
+                <td>${item.prm_netprps_amt || '-'}</td>
+                <td>${item.trde_prica || '-'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        `;
+        document.getElementById("output").innerHTML = "";
+        document.getElementById("output").appendChild(table);
+      }
+
+      function updateTimestamp() {
+        const now = new Date();
+        document.getElementById("timestamp").innerText = `최종 업데이트: ${now.toLocaleTimeString()}`;
+      }
+
+      function delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+      }
+
+      async function updateData() {
+        try {
+          const token = await fetchToken();
+
+          const stockList = await fetchTopStocks(token);
+          await delay(3000);
+
+          const programTradeData = await fetchProgramTradeRanking(token);
+          
+          // Check if data was fetched from stockList or programTradeData
+          if (!stockList.length && !programTradeData.length) {
+            document.getElementById("output").innerHTML = `<div class="error">데이터를 가져오지 못했습니다.</div>`;
+            return;
+          }
+          await delay(3000);
+
+          // *** FIX 1: Assign the result of fetchTradePricaRanking to tradePricaData ***
+          const tradePricaData = await fetchTradePricaRanking(token); 
+          
+          // Check if data was fetched from programTradeData or tradePricaData (or if stockList was empty)
+          // This check needs to consider all data sources now.
+          if (!programTradeData.length && !tradePricaData.length && !stockList.length) {
+             document.getElementById("output").innerHTML = `<div class="error">데이터를 가져오지 못했습니다.</div>`;
+             return;
+          }
+
+
+          // *** FIX 2: Pass tradePricaData to combineData ***
+          const combinedData = combineData(stockList, programTradeData, tradePricaData);
+          
+          // Check if combinedData is empty after merging
+          if (combinedData.length === 0) {
+              document.getElementById("output").innerHTML = `<div class="error">데이터 병합 후 결과가 없습니다.</div>`;
+              return;
+          }
+
+          renderTable(combinedData);
+          updateTimestamp();
+        } catch (e) {
+          console.error("Error during updateData:", e);
+          document.getElementById("output").innerHTML = `<div class="error">데이터 로딩 중 에러가 발생했습니다: ${e.message}</div>`;
+        }
+      }
+
+      document.getElementById("output").innerHTML = `<div class="loading">데이터를 불러오는 중입니다. 잠시만 기다려주세요...</div>`;
+      updateData();
+      setInterval(updateData, 10000);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Kiwoom 거래대금 순위 조회</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+      .container {
+        max-width: 900px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        text-align: center;
+        color: #333;
+      }
+      #timestamp {
+        text-align: right;
+        font-size: 0.9em;
+        color: #777;
+        margin-bottom: 20px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        font-size: 0.9em;
+      }
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+      th {
+        background-color: #f2f2f2;
+        color: #555;
+      }
+      tr:hover {
+        background-color: #f9f9f9;
+      }
+      .loading {
+        text-align: center;
+        color: #888;
+      }
+      .error {
+        color: red;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>키움증권 거래대금 순위 (Mock API)</h1>
+      <div id="timestamp"></div>
+      <div id="output"></div>
+    </div>
+
+    <script>
+      const accessParams = {
+        grant_type: "client_credentials",
+        appkey: "qDyfxixyK38gUcyxhhiV8RKDD_LALkd-zBzDYcWJQP4",
+        secretkey: "egNgDJdNQkg6b8t5UBfGu-pAr0UJwlzGapfVwc73vn0",
+      };
+
+      const chartParams = {
+        mrkt_tp : "000",  //000:전체, 001:코스피, 101:코스닥
+        mang_stk_incls : "1", //0:관리종목 미포함, 1:관리종목 포함
+        stex_tp : "3" //1:KRX, 2:NXT 3.통합
+      };
+
+      async function fetchToken() {
+        const url = "https://mockapi.kiwoom.com/oauth2/token";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json;charset=UTF-8" },
+          body: JSON.stringify(accessParams),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        return data.token;
+      }
+
+      async function fetchTradePricaRanking(token) {
+        const url = "https://mockapi.kiwoom.com/api/dostk/rkinfo";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            authorization: `Bearer ${token}`,
+            "api-id": "ka10032",
+            "cont-yn": "N",
+            "next-key": "",
+          },
+          body: JSON.stringify(chartParams),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        return data.trde_prica_upper || [];
+      }
+
+      function renderTable(dataList) {
+        const table = document.createElement("table");
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>순위</th>
+              <th>종목명</th>
+              <th>현재가</th>
+              <th>등락률</th>
+              <th>거래대금</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${dataList
+              .map(
+                (item) => `
+              <tr>
+                <td>${item.now_rank}</td>
+                <td>${item.stk_nm} (${item.stk_cd})</td>
+                <td>${item.cur_prc}</td>
+                <td>${item.flu_rt} %</td>
+                <td>${item.trde_prica}</td>
+              </tr>
+            `
+              )
+              .join("")}
+          </tbody>
+        `;
+        document.getElementById("output").innerHTML = "";
+        document.getElementById("output").appendChild(table);
+      }
+
+      function updateTimestamp() {
+        const now = new Date();
+        document.getElementById("timestamp").innerText = `최종 업데이트: ${now.toLocaleTimeString()}`;
+      }
+
+      async function updateData() {
+        try {
+          document.getElementById("output").innerHTML = `<div class="loading">데이터 불러오는 중...</div>`;
+          const token = await fetchToken();
+          const tradePricaData = await fetchTradePricaRanking(token);
+
+          if (!tradePricaData || tradePricaData.length === 0) {
+            document.getElementById("output").innerHTML = `<div class="error">API에서 데이터를 가져오지 못했습니다. Mock API 응답을 확인해주세요.</div>`;
+            return;
+          }
+
+          renderTable(tradePricaData);
+          updateTimestamp();
+        } catch (e) {
+          console.error("Error during updateData:", e);
+          document.getElementById("output").innerHTML = `<div class="error">데이터 로딩 중 에러가 발생했습니다: ${e.message}</div>`;
+        }
+      }
+
+      updateData();
+      setInterval(updateData, 10000); // 10초마다 업데이트
+    </script>
+  </body>
+</html>
