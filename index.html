@@ -27,6 +27,12 @@
         border-collapse: collapse;
         font-size: 0.9em;
       }
+      thead {
+        position: sticky; /* 고정 */
+        top: 0; /* 화면 상단에 고정 */
+        background-color: white; /* 배경색 지정 (겹쳐 보일 경우) */
+        z-index: 1; /* 다른 요소 위에 표시 */
+      }
       th,
       td {
         text-align: right;
@@ -51,7 +57,7 @@
   </head>
   <body>
     <div class="container">
-      <div id="timestamp"></div>
+      <!-- <div id="timestamp"></div> -->
       <div id="output-container" style="display: flex; gap: 20px">
         <div id="output" style="flex: 1"></div>
         <div id="iframe-container" style="flex: 1; border: 1px solid #ddd">
@@ -60,7 +66,7 @@
             name="stock-info-frame"
             src=""
             width="100%"
-            height="850px"
+            height="1000px"
             frameborder="0"
           ></iframe>
         </div>
@@ -72,35 +78,6 @@
         grant_type: "client_credentials",
         appkey: "qDyfxixyK38gUcyxhhiV8RKDD_LALkd-zBzDYcWJQP4",
         secretkey: "egNgDJdNQkg6b8t5UBfGu-pAr0UJwlzGapfVwc73vn0",
-      };
-
-      const chartParams1 = {
-        qry_tp: "5",
-      };
-
-      const chartParams2 = {
-        trde_upper_tp: "2",
-        amt_qty_tp: "1",
-        mrkt_tp: "P00000",
-        stex_tp: "1",
-      };
-
-      const chartParams3 = {
-        mrkt_tp: "000", //000:전체, 001:코스피, 101:코스닥
-        mang_stk_incls: "0", //0:관리종목 미포함, 1:관리종목 포함
-        stex_tp: "2", //1:KRX, 2:NXT 3.통합
-      };
-
-      const chartParams4 = {
-        mrkt_tp: "000", //000:전체, 001:코스피, 101:코스닥
-        mang_stk_incls: "0", //0:관리종목 미포함, 1:관리종목 포함
-        stex_tp: "1", //1:KRX, 2:NXT 3.통합
-      };
-
-      const chartParams5 = {
-        mrkt_tp: "000", //000:전체, 001:코스피, 101:코스닥
-        mang_stk_incls: "1", //0:관리종목 미포함, 1:관리종목 포함
-        stex_tp: "3", //1:KRX, 2:NXT 3.통합
       };
 
       const stockInfoList = [
@@ -2437,6 +2414,30 @@
         { 종목코드: "088260", 발행주식수: 63342100, 유통주식수: 63342100 },
       ];
 
+      const chartParams1 = {
+        qry_tp: "5",
+      };
+
+      const chartParams2 = {
+        trde_upper_tp: "2",
+        amt_qty_tp: "1",
+        mrkt_tp: "P00000",
+        stex_tp: "1",
+      };
+
+      const chartParams3 = {
+        trde_upper_tp: "1",
+        amt_qty_tp: "1",
+        mrkt_tp: "P00000",
+        stex_tp: "1",
+      };
+
+      const chartParams4 = {
+        mrkt_tp: "000", //000:전체, 001:코스피, 101:코스닥
+        mang_stk_incls: "0", //0:관리종목 미포함, 1:관리종목 포함
+        stex_tp: "3", //1:KRX, 2:NXT 3.통합
+      };
+
       const stockInfoMap = new Map(
         stockInfoList.map((item) => [item.종목코드, item])
       );
@@ -2504,18 +2505,20 @@
           prm_rank: item.rank,
           price: item.cur_prc ? Math.abs(item.cur_prc) : null,
           flu_rt: item.flu_rt,
-          prm_netprps_amt: item.prm_netprps_amt,
+          prm_netprps_amt: item.prm_netprps_amt
+            ? (item.prm_netprps_amt / 100).toFixed()
+            : null,
         }));
       }
 
-      async function fetchTradePricaRanking(token) {
-        const url = "https://mockapi.kiwoom.com/api/dostk/rkinfo";
+      async function fetchProgramTradeRanking1(token) {
+        const url = "https://mockapi.kiwoom.com/api/dostk/stkinfo";
         const res = await fetch(url, {
           method: "POST",
           headers: {
             "Content-Type": "application/json;charset=UTF-8",
             authorization: `Bearer ${token}`,
-            "api-id": "ka10032",
+            "api-id": "ka90003",
             "cont-yn": "N",
             "next-key": "",
           },
@@ -2525,19 +2528,19 @@
           throw new Error(`HTTP error! status: ${res.status}`);
         }
         const data = await res.json();
-        return (data.trde_prica_upper || []).map((item) => ({
-          stk_cd: item.stk_cd ? item.stk_cd.substring(0, 6) : null, // Normalize stk_cd
+        return (data.prm_netprps_upper_50 || []).map((item) => ({
+          stk_cd: item.stk_cd,
           stk_nm: item.stk_nm,
-          now_rank: item.now_rank,
+          prm_rank: item.rank,
           price: item.cur_prc ? Math.abs(item.cur_prc) : null,
           flu_rt: item.flu_rt,
-          trde_prica: item.trde_prica
-            ? (item.trde_prica / 100).toFixed()
+          prm_netprps_amt: item.prm_netprps_amt
+            ? (item.prm_netprps_amt / 100).toFixed()
             : null,
         }));
       }
 
-      async function fetchTradePricaRanking1(token) {
+      async function fetchTradePricaRanking(token) {
         const url = "https://mockapi.kiwoom.com/api/dostk/rkinfo";
         const res = await fetch(url, {
           method: "POST",
@@ -2566,7 +2569,12 @@
         }));
       }
 
-      function combineData(stockList, programTradeData, tradePricaData) {
+      function combineData(
+        stockList,
+        programTradeData,
+        programTradeData1,
+        tradePricaData
+      ) {
         // Added tradePricaData parameter
         const combinedMap = new Map();
 
@@ -2591,8 +2599,8 @@
           }
         });
 
-        // 3. 거래대금(NXT) 데이터를 병합
-        tradePricaData.forEach((item) => {
+        // 2. 프로그램 순매도 데이터를 병합
+        programTradeData1.forEach((item) => {
           const existingItem = combinedMap.get(item.stk_cd);
           if (existingItem) {
             Object.assign(existingItem, item);
@@ -2607,7 +2615,7 @@
           }
         });
 
-        // 4. 거래대금(krx) 데이터를 병합
+        // 4. 거래대금 데이터를 병합
         tradePricaData.forEach((item) => {
           const existingItem = combinedMap.get(item.stk_cd);
           if (existingItem) {
@@ -2656,7 +2664,7 @@
       function renderTable(data) {
         // Get the output div and set its styles first
         const outputDiv = document.getElementById("output");
-        outputDiv.style.height = "850px";
+        outputDiv.style.height = "1000px";
         outputDiv.style.overflowY = "auto";
 
         // Create the table element
@@ -2697,7 +2705,7 @@
                   }</td>
                   <td><a href="https://finance.naver.com/item/main.naver?code=${
                     item.stk_cd
-                  }" target="stock-info-frame" rel="noopener noreferrer">정보</a></td>
+                  }" target="stock-info-frame" rel="noopener noreferrer">...</a></td>
                 </tr>
               `
               )
@@ -2712,12 +2720,12 @@
         outputDiv.appendChild(table);
       }
 
-      function updateTimestamp() {
-        const now = new Date();
-        document.getElementById(
-          "timestamp"
-        ).innerText = `최종 업데이트: ${now.toLocaleTimeString()}`;
-      }
+      // function updateTimestamp() {
+      //   const now = new Date();
+      //   document.getElementById(
+      //     "timestamp"
+      //   ).innerText = `최종 업데이트: ${now.toLocaleTimeString()}`;
+      // }
 
       function delay(ms) {
         return new Promise((resolve) => setTimeout(resolve, ms));
@@ -2739,8 +2747,18 @@
           }
           await delay(3000);
 
+          const programTradeData1 = await fetchProgramTradeRanking1(token);
+          if (!programTradeData.length && !programTradeData1.length) {
+            document.getElementById(
+              "output"
+            ).innerHTML = `<div class="error">데이터를 가져오지 못했습니다.</div>`;
+            return;
+          }
+          await delay(3000);
+
           const tradePricaData = await fetchTradePricaRanking(token);
           if (
+            !programTradeData1.length &&
             !programTradeData.length &&
             !tradePricaData.length &&
             !stockList.length
@@ -2754,6 +2772,7 @@
           const combinedData = combineData(
             stockList,
             programTradeData,
+            programTradeData1,
             tradePricaData
           );
 
@@ -2766,7 +2785,7 @@
           }
 
           renderTable(combinedData);
-          updateTimestamp();
+          // updateTimestamp();
         } catch (e) {
           console.error("Error during updateData:", e);
           document.getElementById(
@@ -2779,7 +2798,21 @@
         "output"
       ).innerHTML = `<div class="loading">데이터를 불러오는 중입니다. 잠시만 기다려주세요...</div>`;
       updateData();
-      setInterval(updateData, 10000);
+      setInterval(updateData, 15000);
     </script>
+    <div>
+      <a
+        href="https://finviz.com/map.ashx"
+        target="_blank"
+        rel="noopener noreferrer"
+        >finviz</a
+      >
+      <a
+        href="https://jungjc1117.github.io/test/navernews/"
+        target="_blank"
+        rel="noopener noreferrer"
+        >naver</a
+      >
+    </div>
   </body>
 </html>
