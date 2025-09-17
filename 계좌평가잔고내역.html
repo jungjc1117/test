@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>계좌평가잔고내역</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+      .container {
+        max-width: 600px;
+        margin: auto;
+        background: white;
+      }
+      h1 {
+        text-align: center;
+        color: #333;
+      }
+      #timestamp {
+        text-align: right;
+        font-size: 0.9em;
+        color: #777;
+        margin-bottom: 20px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+      th {
+        background-color: #f2f2f2;
+        color: #555;
+      }
+      tr:hover {
+        background-color: #f9f9f9;
+      }
+      .loading {
+        text-align: center;
+        color: #888;
+      }
+      .error {
+        color: red;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div id="timestamp"></div>
+      <div id="output"></div>
+    </div>
+
+    <script>
+      const accessParams = {
+        grant_type: "client_credentials",
+        appkey: "qDyfxixyK38gUcyxhhiV8RKDD_LALkd-zBzDYcWJQP4",
+        secretkey: "egNgDJdNQkg6b8t5UBfGu-pAr0UJwlzGapfVwc73vn0",
+      };
+
+      const chartParams = {
+        qry_tp: "2", // 1:합산, 2:개별
+        dmst_stex_tp: "KRX", // KRX:한국거래소,NXT:넥스트트레이드
+      };
+
+      async function fetchToken() {
+        const url = "https://mockapi.kiwoom.com/oauth2/token";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json;charset=UTF-8" },
+          body: JSON.stringify(accessParams),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        return data.token;
+      }
+
+      async function fetchTopStocks(token) {
+        const url = "https://mockapi.kiwoom.com/api/dostk/acnt";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            authorization: `Bearer ${token}`,
+            "api-id": "kt00018",
+            "cont-yn": "N",
+            "next-key": "",
+          },
+          body: JSON.stringify(chartParams),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        return data.acnt_evlt_remn_indv_tot || [];
+      }
+
+      function renderTable(dataList) {
+        const table = document.createElement("table");
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>종목번호</th>
+              <th>종목명</th>
+              <th>수익률(%)</th>
+              <th>매입가</th>
+              <th>현재가</th>
+              <th>보유수량</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${dataList
+              .map(
+                (item) => `
+              <tr>
+                <td>${item.stk_cd.replace(/^0+/, "")}</td>
+                <td>${item.stk_nm}</td>
+                <td>${parseFloat(item.prft_rt).toFixed(2)}</td>
+                <td>${parseInt(item.pur_pric, 10).toString()}</td>
+                <td>${parseInt(item.cur_prc, 10).toString()}</td>
+                <td>${parseInt(item.rmnd_qty, 10).toString()}</td>
+              </tr>
+            `
+              )
+              .join("")}
+          </tbody>
+        `;
+        document.getElementById("output").innerHTML = "";
+        document.getElementById("output").appendChild(table);
+      }
+
+      function updateTimestamp() {
+        const now = new Date();
+        document.getElementById(
+          "timestamp"
+        ).innerText = `최종 업데이트: ${now.toLocaleTimeString()}`;
+      }
+
+      async function updateData() {
+        try {
+          document.getElementById(
+            "output"
+          ).innerHTML = `<div class="loading">데이터 불러오는 중...</div>`;
+          const token = await fetchToken();
+          const stockList = await fetchTopStocks(token);
+
+          if (!stockList || stockList.length === 0) {
+            document.getElementById(
+              "output"
+            ).innerHTML = `<div class="error">API에서 데이터를 가져오지 못했습니다.</div>`;
+            return;
+          }
+
+          renderTable(stockList);
+          updateTimestamp();
+        } catch (e) {
+          console.error("Error during updateData:", e);
+          document.getElementById(
+            "output"
+          ).innerHTML = `<div class="error">데이터 로딩 중 에러가 발생했습니다: ${e.message}</div>`;
+        }
+      }
+
+      // Initial data load and periodic updates
+      updateData();
+      setInterval(updateData, 10000); // Update every 10 seconds
+    </script>
+  </body>
+</html>
