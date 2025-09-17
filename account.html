@@ -63,7 +63,7 @@
         secretkey: "egNgDJdNQkg6b8t5UBfGu-pAr0UJwlzGapfVwc73vn0",
       };
 
-      const chartParams = {
+      const chartParams5 = {
         qry_tp: "2", // 1:합산, 2:개별
         dmst_stex_tp: "KRX", // KRX:한국거래소,NXT:넥스트트레이드
       };
@@ -82,7 +82,7 @@
         return data.token;
       }
 
-      async function fetchTopStocks(token) {
+      async function fetchAccount(token) {
         const url = "https://mockapi.kiwoom.com/api/dostk/acnt";
         const res = await fetch(url, {
           method: "POST",
@@ -93,7 +93,7 @@
             "cont-yn": "N",
             "next-key": "",
           },
-          body: JSON.stringify(chartParams),
+          body: JSON.stringify(chartParams5),
         });
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
@@ -102,7 +102,7 @@
         return data.acnt_evlt_remn_indv_tot || [];
       }
 
-      function renderTable(dataList) {
+      function renderTable1(dataList) {
         const table = document.createElement("table");
         table.innerHTML = `
           <thead>
@@ -149,7 +149,7 @@
             "output"
           ).innerHTML = `<div class="loading">데이터 불러오는 중...</div>`;
           const token = await fetchToken();
-          const stockList = await fetchTopStocks(token);
+          const stockList = await fetchAccount(token);
 
           if (!stockList || stockList.length === 0) {
             document.getElementById(
@@ -158,8 +158,7 @@
             return;
           }
 
-          renderTable(stockList);
-          updateTimestamp();
+          renderTable1(stockList);
         } catch (e) {
           console.error("Error during updateData:", e);
           document.getElementById(
@@ -170,7 +169,6 @@
 
       // Initial data load and periodic updates
       updateData();
-      setInterval(updateData, 10000); // Update every 10 seconds
     </script>
   </body>
 </html>
