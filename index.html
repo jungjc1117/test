@@ -8,6 +8,18 @@
         font-family: Arial, sans-serif;
         background-color: #f4f4f4;
       }
+      .fixed-header {
+        position: fixed; /* 요소를 화면에 고정시킵니다. */
+        top: 0; /* 화면 상단에 고정합니다. */
+        left: 0; /* 화면 왼쪽에 고정합니다. */
+        width: 100%; /* 화면 전체 너비에 맞춥니다. */
+        padding: 10px;
+        z-index: 100; /* 다른 콘텐츠 위에 표시되도록 설정합니다. */
+      }
+      .content {
+        margin-top: 60px; /* 고정된 헤더만큼 위쪽에 여백을 주어 콘텐츠가 헤더 아래로 들어가도록 합니다. */
+        padding: 20px;
+      }
       .container {
         margin: auto;
         background: white;
@@ -38,6 +50,12 @@
         color: #777;
       }
       table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9em;
+      }
+      #account-output table {
+        max-width: 800px;
         width: 100%;
         border-collapse: collapse;
         font-size: 0.9em;
@@ -73,31 +91,51 @@
   <body>
     <div class="container">
       <div id="timestamp"></div>
-      <div id="iframe-wrapper">
-        <a
-          href="https://finviz.com/map.ashx"
-          target="_blank"
-          rel="noopener noreferrer"
-          >finviz</a
-        ><br />
-        <a
-          href="https://jungjc1117.github.io/test/account.html"
-          src=""
-          width="100%"
-          height="500px"
-          frameborder="0"
-          rel="noopener noreferrer"
-          >계좌평가잔고내역</a
-        ><br />
+      <div class="fixed-header" id="iframe-wrapper">
+        <div id="account-output"></div>
       </div>
-      <div id="output-container" style="display: flex; gap: 20px">
+      <div
+        class="content"
+        id="output-container"
+        style="display: flex; gap: 20px"
+      >
         <div id="iframe-container" style="flex: 1; border: 1px solid #ddd">
+          <div
+            class="two-iframes-row"
+            style="display: flex; gap: 10px; margin-bottom: 10px"
+          >
+            <iframe
+              id="stock-info-frame1"
+              name="stock-info-frame1"
+              src=""
+              width="50%"
+              height="200px"
+              frameborder="0"
+            ></iframe>
+            <iframe
+              id="stock-info-frame2"
+              name="stock-info-frame2"
+              src=""
+              width="50%"
+              height="200px"
+              frameborder="0"
+            ></iframe>
+          </div>
           <iframe
-            id="stock-info-frame"
-            name="stock-info-frame"
+            id="stock-info-frame3"
+            name="stock-info-frame3"
             src=""
             width="100%"
-            height="2000px"
+            height="500px"
+            frameborder="0"
+            >${item.name}</iframe
+          >
+          <iframe
+            id="stock-info-frame4"
+            name="stock-info-frame4"
+            src=""
+            width="100%"
+            height="500px"
             frameborder="0"
           ></iframe>
         </div>
@@ -2481,6 +2519,11 @@
         stex_tp: "3", //1:KRX, 2:NXT 3.통합
       };
 
+      const chartParams5 = {
+        qry_tp: "2", // 1:합산, 2:개별
+        dmst_stex_tp: "KRX", // KRX:한국거래소,NXT:넥스트트레이드
+      };
+
       const stockInfoMap = new Map(
         stockInfoList.map((item) => [item.종목코드, item])
       );
@@ -2599,6 +2642,26 @@
         }
         const data = await res.json();
         return data.token;
+      }
+
+      async function fetchAccount(token) {
+        const url = "https://mockapi.kiwoom.com/api/dostk/acnt";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            authorization: `Bearer ${token}`,
+            "api-id": "kt00018",
+            "cont-yn": "N",
+            "next-key": "",
+          },
+          body: JSON.stringify(chartParams5),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        return data.acnt_evlt_remn_indv_tot || [];
       }
 
       async function fetchTopStocks(token) {
@@ -2793,6 +2856,34 @@
         return combinedList;
       }
 
+      function updateIframes() {
+        const timestamp = new Date().getTime();
+
+        const frame1 = document.getElementById("stock-info-frame1");
+        frame1.src = `https://t1.daumcdn.net/media/finance/chart/kr/daumindex/d/KGG01P.png?timestamp=${timestamp}`;
+
+        const frame2 = document.getElementById("stock-info-frame2");
+        frame2.src = `https://t1.daumcdn.net/media/finance/chart/kr/daumindex/d/QGG01P.png?timestamp=${timestamp}`;
+      }
+
+      function showDualCharts(event, stk_cd) {
+        event.preventDefault(); // Prevents the default link behavior of navigating to '#'
+
+        const timestamp = new Date().getTime();
+
+        // The two chart URLs
+        const url1 = `https://t1.daumcdn.net/media/finance/chart/kr/stock/d/A${stk_cd}.png?timestamp=${timestamp}/home`;
+        const url2 = `https://t1.daumcdn.net/media/finance/chart/kr/candle/d/A${stk_cd}.png?timestamp=${timestamp}/home`;
+
+        // Get the two iframes by their IDs
+        const iframe3 = document.getElementById("stock-info-frame3");
+        const iframe4 = document.getElementById("stock-info-frame4");
+
+        // Set the src attribute of each iframe to the respective URL
+        iframe3.src = url1;
+        iframe4.src = url2;
+      }
+
       // *** Moved copyToClipboard to the global scope ***
       function copyToClipboard(text) {
         navigator.clipboard
@@ -2841,9 +2932,11 @@
                             ${item.stk_cd}
                         </button>
                     </td>
-                    <td><a href="https://m.finance.daum.net/quotes/A${
-                      item.stk_cd
-                    }/home" target="stock-info-frame" rel="noopener noreferrer">...</a></td>
+                    <td>
+                      <a href="#" onclick="showDualCharts(event, '${
+                        item.stk_cd
+                      }')" rel="noopener noreferrer">...</a>
+                    </td>
                     <td>${item.stk_nm || "-"}</td>
                     <td>${item.price || "-"}</td>
                     <td>${item.flu_rt || "-"}</td>
@@ -2879,6 +2972,40 @@
 
         // Append the created table to the output div
         outputDiv.appendChild(table);
+      }
+
+      function renderTable1(dataList) {
+        const table = document.createElement("table");
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>종목번호</th>
+                    <th>종목명</th>
+                    <th>수익률(%)</th>
+                    <th>매입가</th>
+                    <th>현재가</th>
+                    <th>보유수량</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${dataList
+                  .map(
+                    (item) => `
+                    <tr>
+                        <td>${item.stk_cd.replace(/^0+/, "")}</td>
+                        <td>${item.stk_nm}</td>
+                        <td>${parseFloat(item.prft_rt).toFixed(2)}</td>
+                        <td>${parseInt(item.pur_pric, 10).toString()}</td>
+                        <td>${parseInt(item.cur_prc, 10).toString()}</td>
+                        <td>${parseInt(item.rmnd_qty, 10).toString()}</td>
+                    </tr>
+                `
+                  )
+                  .join("")}
+            </tbody>
+        `;
+        document.getElementById("account-output").innerHTML = "";
+        document.getElementById("account-output").appendChild(table);
       }
 
       function delay(ms) {
@@ -2948,10 +3075,36 @@
         }
       }
 
+      async function updateData1() {
+        try {
+          document.getElementById(
+            "account-output"
+          ).innerHTML = `<div class="loading">데이터 불러오는 중...</div>`;
+          const token = await fetchToken();
+          const stockList = await fetchAccount(token);
+
+          if (!stockList || stockList.length === 0) {
+            document.getElementById(
+              "account-output"
+            ).innerHTML = `<div class="error">API에서 데이터를 가져오지 못했습니다.</div>`;
+            return;
+          }
+
+          renderTable1(stockList);
+        } catch (e) {
+          console.error("Error during updateData:", e);
+          document.getElementById(
+            "account-output"
+          ).innerHTML = `<div class="error">데이터 로딩 중 에러가 발생했습니다: ${e.message}</div>`;
+        }
+      }
+
       document.getElementById(
         "output"
       ).innerHTML = `<div class="loading">데이터를 불러오는 중입니다. 잠시만 기다려주세요...</div>`;
       updateData();
+      updateData1();
+      updateIframes();
       setInterval(updateData, 15000);
     </script>
   </body>
