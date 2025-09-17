@@ -73,7 +73,7 @@
       const chartParams = {
         trde_upper_tp: "2", // 1:순매도상위, 2:순매수상위
         amt_qty_tp: "1", // 1:금액, 2:수량
-        mrkt_tp: "P00000", // P00101:코스피, P10102:코스닥, P00000:전체
+        mrkt_tp: "P10102", // P00101:코스피, P10102:코스닥, P00000:전체
         stex_tp: "1", // 1:KRX, 2:NXT 3.통합
       };
 
@@ -145,17 +145,23 @@
 
       function updateTimestamp() {
         const now = new Date();
-        document.getElementById("timestamp").innerText = `최종 업데이트: ${now.toLocaleTimeString()}`;
+        document.getElementById(
+          "timestamp"
+        ).innerText = `최종 업데이트: ${now.toLocaleTimeString()}`;
       }
 
       async function updateData() {
         try {
-          document.getElementById("output").innerHTML = `<div class="loading">데이터 불러오는 중...</div>`;
+          document.getElementById(
+            "output"
+          ).innerHTML = `<div class="loading">데이터 불러오는 중...</div>`;
           const token = await fetchToken();
           const programTradeData = await fetchProgramTradeRanking(token);
 
           if (!programTradeData || programTradeData.length === 0) {
-            document.getElementById("output").innerHTML = `<div class="error">API에서 데이터를 가져오지 못했습니다. Mock API 응답을 확인해주세요.</div>`;
+            document.getElementById(
+              "output"
+            ).innerHTML = `<div class="error">API에서 데이터를 가져오지 못했습니다. Mock API 응답을 확인해주세요.</div>`;
             return;
           }
 
@@ -163,7 +169,9 @@
           updateTimestamp();
         } catch (e) {
           console.error("Error during updateData:", e);
-          document.getElementById("output").innerHTML = `<div class="error">데이터 로딩 중 에러가 발생했습니다: ${e.message}</div>`;
+          document.getElementById(
+            "output"
+          ).innerHTML = `<div class="error">데이터 로딩 중 에러가 발생했습니다: ${e.message}</div>`;
         }
       }
 
