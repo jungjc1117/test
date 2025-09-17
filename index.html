@@ -13,15 +13,20 @@
         background: white;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
       }
-      .iframe-wrapper {
-        flex: 1; /* 각 iframe이 기본적으로 동일한 너비를 차지하도록 */
-        border: 1px solid #ddd; /* 구분선 */
-        box-sizing: border-box; /* 패딩과 테두리가 너비에 포함되도록 */
-        overflow: hidden; /* iframe 내부 스크롤은 유지 */
+      #output-container {
+        display: flex;
+        gap: 20px;
       }
-      .iframe-wrapper:nth-child(3) {
-        flex: none; /* flex: 1; 설정을 해제하여 고정 너비 적용 */
-        width: 40px;
+      .iframe-wrapper {
+        border: 1px solid #ddd;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+      /* 특정 iframe-wrapper에 대한 스타일은 제거하거나 새로운 규칙으로 대체해야 합니다. */
+      /* 예를 들어, #iframe-wrapper에 직접 스타일을 적용할 수 있습니다. */
+      #iframe-wrapper {
+        padding: 10px;
+        text-align: right;
       }
       h1 {
         text-align: center;
@@ -70,33 +75,26 @@
   </head>
   <body>
     <div class="container">
-      <!-- <div id="timestamp"></div> -->
+      <div id="iframe-wrapper">
+        <a
+          href="https://finviz.com/map.ashx"
+          target="_blank"
+          rel="noopener noreferrer"
+          >finviz</a
+        ><br />
+      </div>
       <div id="output-container" style="display: flex; gap: 20px">
-        <div id="output" style="flex: 1"></div>
         <div id="iframe-container" style="flex: 1; border: 1px solid #ddd">
           <iframe
             id="stock-info-frame"
             name="stock-info-frame"
             src=""
             width="100%"
-            height="1000px"
+            height="2000px"
             frameborder="0"
           ></iframe>
         </div>
-        <div id="iframe-wrapper">
-          <a
-            href="https://finviz.com/map.ashx"
-            target="_blank"
-            rel="noopener noreferrer"
-            >finviz</a
-          ><br />
-          <a
-            href="https://jungjc1117.github.io/test/daumnews.html"
-            target="_blank"
-            rel="noopener noreferrer"
-            >daum</a
-          >
-        </div>
+        <div id="output" style="flex: 1"></div>
       </div>
     </div>
 
@@ -2445,19 +2443,19 @@
         qry_tp: "5",
       };
 
-      // const chartParams2 = {
-      //   trde_upper_tp: "2",
-      //   amt_qty_tp: "1",
-      //   mrkt_tp: "P00000",
-      //   stex_tp: "1",
-      // };
+      const chartParams2 = {
+        trde_upper_tp: "2",
+        amt_qty_tp: "1",
+        mrkt_tp: "P00000",
+        stex_tp: "1",
+      };
 
-      // const chartParams3 = {
-      //   trde_upper_tp: "1",
-      //   amt_qty_tp: "1",
-      //   mrkt_tp: "P00000",
-      //   stex_tp: "1",
-      // };
+      const chartParams3 = {
+        trde_upper_tp: "1",
+        amt_qty_tp: "1",
+        mrkt_tp: "P00000",
+        stex_tp: "1",
+      };
 
       const chartParams4 = {
         mrkt_tp: "000", //000:전체, 001:코스피, 101:코스닥
@@ -2468,6 +2466,108 @@
       const stockInfoMap = new Map(
         stockInfoList.map((item) => [item.종목코드, item])
       );
+
+      async function orderbuy(stk_cd, price) {
+        if (!parseInt(price) || parseInt(price) <= 0) {
+          alert("유효한 가격 정보가 없어 주문할 수 없습니다.");
+          return;
+        }
+
+        const orderQuantity = Math.floor(1000000 / parseInt(price)); // 100만 원어치 주문
+        if (orderQuantity === 0) {
+          alert("100만 원으로 주문할 수 있는 수량이 없습니다.");
+          return;
+        }
+
+        const chartParams5 = {
+          dmst_stex_tp: "KRX",
+          stk_cd: stk_cd,
+          ord_qty: orderQuantity.toString(), // 주문수량
+          ord_uv: "",
+          trde_tp: "3",
+          cond_uv: "",
+        };
+
+        try {
+          const token = await fetchToken();
+          const url = "https://mockapi.kiwoom.com/api/dostk/ordr";
+          const res = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json;charset=UTF-8",
+              authorization: `Bearer ${token}`,
+              "api-id": "kt10000",
+              "cont-yn": "N",
+              "next-key": "",
+            },
+            body: JSON.stringify(chartParams5),
+          });
+
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+          }
+
+          const data = await res.json();
+          console.log("주문 응답:", data);
+          alert(
+            `${stk_cd} 종목에 대해 ${orderQuantity}주 주문이 성공적으로 전송되었습니다.`
+          );
+        } catch (e) {
+          console.error("주문 실패:", e);
+          alert(`주문 실패: ${e.message}`);
+        }
+      }
+
+      async function ordersell(stk_cd, price) {
+        if (!parseInt(price) || parseInt(price) <= 0) {
+          alert("유효한 가격 정보가 없어 주문할 수 없습니다.");
+          return;
+        }
+
+        const orderQuantity = Math.floor(1000000 / parseInt(price)); // 100만 원어치 주문
+        if (orderQuantity === 0) {
+          alert("100만 원으로 주문할 수 있는 수량이 없습니다.");
+          return;
+        }
+
+        const chartParams5 = {
+          dmst_stex_tp: "KRX",
+          stk_cd: stk_cd,
+          ord_qty: orderQuantity.toString(), // 주문수량
+          ord_uv: "",
+          trde_tp: "3",
+          cond_uv: "",
+        };
+
+        try {
+          const token = await fetchToken();
+          const url = "https://mockapi.kiwoom.com/api/dostk/ordr";
+          const res = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json;charset=UTF-8",
+              authorization: `Bearer ${token}`,
+              "api-id": "kt10001",
+              "cont-yn": "N",
+              "next-key": "",
+            },
+            body: JSON.stringify(chartParams5),
+          });
+
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+          }
+
+          const data = await res.json();
+          console.log("주문 응답:", data);
+          alert(
+            `${stk_cd} 종목에 대해 ${orderQuantity}주 주문이 성공적으로 전송되었습니다.`
+          );
+        } catch (e) {
+          console.error("주문 실패:", e);
+          alert(`주문 실패: ${e.message}`);
+        }
+      }
 
       async function fetchToken() {
         const url = "https://mockapi.kiwoom.com/oauth2/token";
@@ -2509,63 +2609,63 @@
         }));
       }
 
-      // async function fetchProgramTradeRanking(token) {
-      //   const url = "https://mockapi.kiwoom.com/api/dostk/stkinfo";
-      //   const res = await fetch(url, {
-      //     method: "POST",
-      //     headers: {
-      //       "Content-Type": "application/json;charset=UTF-8",
-      //       authorization: `Bearer ${token}`,
-      //       "api-id": "ka90003",
-      //       "cont-yn": "N",
-      //       "next-key": "",
-      //     },
-      //     body: JSON.stringify(chartParams2),
-      //   });
-      //   if (!res.ok) {
-      //     throw new Error(`HTTP error! status: ${res.status}`);
-      //   }
-      //   const data = await res.json();
-      //   return (data.prm_netprps_upper_50 || []).map((item) => ({
-      //     stk_cd: item.stk_cd,
-      //     stk_nm: item.stk_nm,
-      //     prm_rank: item.rank,
-      //     price: item.cur_prc ? Math.abs(item.cur_prc) : null,
-      //     flu_rt: item.flu_rt,
-      //     prm_netprps_amt: item.prm_netprps_amt
-      //       ? (item.prm_netprps_amt / 100).toFixed()
-      //       : null,
-      //   }));
-      // }
+      async function fetchProgramTradeRanking(token) {
+        const url = "https://mockapi.kiwoom.com/api/dostk/stkinfo";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            authorization: `Bearer ${token}`,
+            "api-id": "ka90003",
+            "cont-yn": "N",
+            "next-key": "",
+          },
+          body: JSON.stringify(chartParams2),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        return (data.prm_netprps_upper_50 || []).map((item) => ({
+          stk_cd: item.stk_cd,
+          stk_nm: item.stk_nm,
+          prm_rank: item.rank,
+          price: item.cur_prc ? Math.abs(item.cur_prc) : null,
+          flu_rt: item.flu_rt,
+          prm_netprps_amt: item.prm_netprps_amt
+            ? (item.prm_netprps_amt / 100).toFixed()
+            : null,
+        }));
+      }
 
-      // async function fetchProgramTradeRanking1(token) {
-      //   const url = "https://mockapi.kiwoom.com/api/dostk/stkinfo";
-      //   const res = await fetch(url, {
-      //     method: "POST",
-      //     headers: {
-      //       "Content-Type": "application/json;charset=UTF-8",
-      //       authorization: `Bearer ${token}`,
-      //       "api-id": "ka90003",
-      //       "cont-yn": "N",
-      //       "next-key": "",
-      //     },
-      //     body: JSON.stringify(chartParams3),
-      //   });
-      //   if (!res.ok) {
-      //     throw new Error(`HTTP error! status: ${res.status}`);
-      //   }
-      //   const data = await res.json();
-      //   return (data.prm_netprps_upper_50 || []).map((item) => ({
-      //     stk_cd: item.stk_cd,
-      //     stk_nm: item.stk_nm,
-      //     prm_rank: item.rank,
-      //     price: item.cur_prc ? Math.abs(item.cur_prc) : null,
-      //     flu_rt: item.flu_rt,
-      //     prm_netprps_amt: item.prm_netprps_amt
-      //       ? (item.prm_netprps_amt / 100).toFixed()
-      //       : null,
-      //   }));
-      // }
+      async function fetchProgramTradeRanking1(token) {
+        const url = "https://mockapi.kiwoom.com/api/dostk/stkinfo";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            authorization: `Bearer ${token}`,
+            "api-id": "ka90003",
+            "cont-yn": "N",
+            "next-key": "",
+          },
+          body: JSON.stringify(chartParams3),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        return (data.prm_netprps_upper_50 || []).map((item) => ({
+          stk_cd: item.stk_cd,
+          stk_nm: item.stk_nm,
+          prm_rank: item.rank,
+          price: item.cur_prc ? Math.abs(item.cur_prc) : null,
+          flu_rt: item.flu_rt,
+          prm_netprps_amt: item.prm_netprps_amt
+            ? (item.prm_netprps_amt / 100).toFixed()
+            : null,
+        }));
+      }
 
       async function fetchTradePricaRanking(token) {
         const url = "https://mockapi.kiwoom.com/api/dostk/rkinfo";
@@ -2598,8 +2698,8 @@
 
       function combineData(
         stockList,
-        // programTradeData,
-        // programTradeData1,
+        programTradeData,
+        programTradeData1,
         tradePricaData
       ) {
         // Added tradePricaData parameter
@@ -2610,37 +2710,37 @@
           combinedMap.set(item.stk_cd, { ...item });
         });
 
-        // // 2. 프로그램 순매수 데이터를 병합
-        // programTradeData.forEach((item) => {
-        //   const existingItem = combinedMap.get(item.stk_cd);
-        //   if (existingItem) {
-        //     Object.assign(existingItem, item);
-        //     if (item.price) {
-        //       existingItem.price = item.price;
-        //     }
-        //     if (item.flu_rt) {
-        //       existingItem.flu_rt = item.flu_rt;
-        //     }
-        //   } else {
-        //     combinedMap.set(item.stk_cd, { ...item });
-        //   }
-        // });
+        // 2. 프로그램 순매수 데이터를 병합
+        programTradeData.forEach((item) => {
+          const existingItem = combinedMap.get(item.stk_cd);
+          if (existingItem) {
+            Object.assign(existingItem, item);
+            if (item.price) {
+              existingItem.price = item.price;
+            }
+            if (item.flu_rt) {
+              existingItem.flu_rt = item.flu_rt;
+            }
+          } else {
+            combinedMap.set(item.stk_cd, { ...item });
+          }
+        });
 
-        // // 2. 프로그램 순매도 데이터를 병합
-        // programTradeData1.forEach((item) => {
-        //   const existingItem = combinedMap.get(item.stk_cd);
-        //   if (existingItem) {
-        //     Object.assign(existingItem, item);
-        //     if (item.price) {
-        //       existingItem.price = item.price;
-        //     }
-        //     if (item.flu_rt) {
-        //       existingItem.flu_rt = item.flu_rt;
-        //     }
-        //   } else {
-        //     combinedMap.set(item.stk_cd, { ...item });
-        //   }
-        // });
+        // 2. 프로그램 순매도 데이터를 병합
+        programTradeData1.forEach((item) => {
+          const existingItem = combinedMap.get(item.stk_cd);
+          if (existingItem) {
+            Object.assign(existingItem, item);
+            if (item.price) {
+              existingItem.price = item.price;
+            }
+            if (item.flu_rt) {
+              existingItem.flu_rt = item.flu_rt;
+            }
+          } else {
+            combinedMap.set(item.stk_cd, { ...item });
+          }
+        });
 
         // 4. 거래대금 데이터를 병합
         tradePricaData.forEach((item) => {
@@ -2691,7 +2791,7 @@
       function renderTable(data) {
         // Get the output div and set its styles first
         const outputDiv = document.getElementById("output");
-        outputDiv.style.height = "1000px";
+        outputDiv.style.height = "2000px";
         outputDiv.style.overflowY = "auto";
 
         // Create the table element
@@ -2705,10 +2805,12 @@
               <th>종목명</th>
               <th>현재가</th>
               <th>등락률 (%)</th>
-              <!--<th>프로</th>-->
+              <th>프로</th>
               <th>거래(억)</th>
               <th>유통총액(억)</th>
               <th>종합정보</th>
+              <th>매수</th>
+              <th>매도</th>
             </tr>
           </thead>
           <tbody>
@@ -2716,28 +2818,41 @@
               .map(
                 (item) => `
                 <tr>
-                  <td>
-                    <button onclick="copyToClipboard('${item.stk_cd}')">
-                      ${item.stk_cd}
-                    </button>
-                  </td>
-                  <td>${item.stk_nm || "-"}</td>
-                  <td>${item.price || "-"}</td>
-                  <td>${item.flu_rt || "-"}</td>
-                  <!--<td>${item.prm_netprps_amt || "-"}</td>-->
-                  <td>${item.trde_prica || "-"}</td>
-                  <td>${
-                    ((item.유통주식수 * item.price) / 100000000).toFixed(0) ||
-                    "-"
-                  }</td>
-                  <td><a href="https://finance.daum.net/quotes/A${
-                    item.stk_cd
-                  }#chart" target="stock-info-frame" rel="noopener noreferrer">...</a></td>
-                </tr>
-              `
+                    <td>
+                        <button onclick="copyToClipboard('${item.stk_cd}')">
+                            ${item.stk_cd}
+                        </button>
+                    </td>
+                    <td>${item.stk_nm || "-"}</td>
+                    <td>${item.price || "-"}</td>
+                    <td>${item.flu_rt || "-"}</td>
+                    <td>${item.prm_netprps_amt || "-"}</td>
+                    <td>${item.trde_prica || "-"}</td>
+                    <td>${
+                      ((item.유통주식수 * item.price) / 100000000).toFixed(0) ||
+                      "-"
+                    }</td>
+                    <td><a href="https://m.finance.daum.net/quotes/A${
+                      item.stk_cd
+                    }/home" target="stock-info-frame" rel="noopener noreferrer">...</a></td>
+                    <td>
+                        <button onclick="orderbuy('${item.stk_cd}', ${
+                  item.price
+                })">
+                            매수
+                        </button>
+                    </td>
+                    <td>
+                        <button onclick="ordersell('${item.stk_cd}', ${
+                  item.price
+                })">
+                            매도
+                        </button>
+                    </td>
+                </tr>`
               )
               .join("")}
-          </tbody>
+        </tbody>
         `;
 
         // Clear any existing content in the output div
@@ -2758,28 +2873,28 @@
           const stockList = await fetchTopStocks(token);
           await delay(4000);
 
-          // const programTradeData = await fetchProgramTradeRanking(token);
-          // if (!stockList.length && !programTradeData.length) {
-          //   document.getElementById(
-          //     "output"
-          //   ).innerHTML = `<div class="error">데이터를 가져오지 못했습니다.</div>`;
-          //   return;
-          // }
-          // await delay(4000);
+          const programTradeData = await fetchProgramTradeRanking(token);
+          if (!stockList.length && !programTradeData.length) {
+            document.getElementById(
+              "output"
+            ).innerHTML = `<div class="error">데이터를 가져오지 못했습니다.</div>`;
+            return;
+          }
+          await delay(4000);
 
-          // // const programTradeData1 = await fetchProgramTradeRanking1(token);
-          // // if (!programTradeData.length && !programTradeData1.length) {
-          // //   document.getElementById(
-          // //     "output"
-          // //   ).innerHTML = `<div class="error">데이터를 가져오지 못했습니다.</div>`;
-          // //   return;
-          // // }
-          // // await delay(4000);
+          const programTradeData1 = await fetchProgramTradeRanking1(token);
+          if (!programTradeData.length && !programTradeData1.length) {
+            document.getElementById(
+              "output"
+            ).innerHTML = `<div class="error">데이터를 가져오지 못했습니다.</div>`;
+            return;
+          }
+          await delay(4000);
 
           const tradePricaData = await fetchTradePricaRanking(token);
           if (
-            // !programTradeData1.length &&
-            // !programTradeData.length &&
+            !programTradeData1.length &&
+            !programTradeData.length &&
             !tradePricaData.length &&
             !stockList.length
           ) {
@@ -2791,8 +2906,8 @@
 
           const combinedData = combineData(
             stockList,
-            // programTradeData,
-            // programTradeData1,
+            programTradeData,
+            programTradeData1,
             tradePricaData
           );
 
