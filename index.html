@@ -2811,13 +2811,13 @@
           <thead>
             <tr>
               <th>코드</th>
+              <th>종합정보</th>
               <th>종목명</th>
               <th>현재가</th>
               <th>등락률 (%)</th>
               <th>프로</th>
               <th>거래(억)</th>
               <th>유통총액(억)</th>
-              <th>종합정보</th>
               <th>매수</th>
               <th>매도</th>
             </tr>
@@ -2832,6 +2832,9 @@
                             ${item.stk_cd}
                         </button>
                     </td>
+                    <td><a href="https://m.finance.daum.net/quotes/A${
+                      item.stk_cd
+                    }/home" target="stock-info-frame" rel="noopener noreferrer">...</a></td>
                     <td>${item.stk_nm || "-"}</td>
                     <td>${item.price || "-"}</td>
                     <td>${item.flu_rt || "-"}</td>
@@ -2841,9 +2844,7 @@
                       ((item.유통주식수 * item.price) / 100000000).toFixed(0) ||
                       "-"
                     }</td>
-                    <td><a href="https://m.finance.daum.net/quotes/A${
-                      item.stk_cd
-                    }/home" target="stock-info-frame" rel="noopener noreferrer">...</a></td>
+
                     <td>
                         <button onclick="orderbuy('${item.stk_cd}', ${
                   item.price
