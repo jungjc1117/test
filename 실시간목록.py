@@ -29,8 +29,8 @@ SOCKET_URL = 'wss://mockapi.kiwoom.com:10000/api/dostk/websocket'  # 모의투�
 # 접근 토큰 요청
 access_params = {
     'grant_type': 'client_credentials',
-    'appkey': 'qDyfxixyK38gUcyxhhiV8RKDD_LALkd-zBzDYcWJQP4',
-    'secretkey': 'egNgDJdNQkg6b8t5UBfGu-pAr0UJwlzGapfVwc73vn0',
+    'appkey': 'oJ5S3eaEUVsSaxPX7vkiOPjOI9_yvkFGm3lwAkd_fAg',
+    'secretkey': 'lA1nom_3Ql1TX1rUpppvwhRJBuEQ44cECAYn7lCGgps',
 }
 ACCESS_TOKEN = fn_au10001(data=access_params)
 

@@ -65,8 +65,8 @@
     <script>
       const accessParams = {
         grant_type: "client_credentials",
-        appkey: "qDyfxixyK38gUcyxhhiV8RKDD_LALkd-zBzDYcWJQP4",
-        secretkey: "egNgDJdNQkg6b8t5UBfGu-pAr0UJwlzGapfVwc73vn0",
+        appkey: "oJ5S3eaEUVsSaxPX7vkiOPjOI9_yvkFGm3lwAkd_fAg",
+        secretkey: "lA1nom_3Ql1TX1rUpppvwhRJBuEQ44cECAYn7lCGgps",
       };
 
       const chartParams = {
@@ -139,17 +139,23 @@
 
       function updateTimestamp() {
         const now = new Date();
-        document.getElementById("timestamp").innerText = `최종 업데이트: ${now.toLocaleTimeString()}`;
+        document.getElementById(
+          "timestamp"
+        ).innerText = `최종 업데이트: ${now.toLocaleTimeString()}`;
       }
 
       async function updateData() {
         try {
-          document.getElementById("output").innerHTML = `<div class="loading">데이터 불러오는 중...</div>`;
+          document.getElementById(
+            "output"
+          ).innerHTML = `<div class="loading">데이터 불러오는 중...</div>`;
           const token = await fetchToken();
           const stockList = await fetchTopStocks(token);
 
           if (!stockList || stockList.length === 0) {
-            document.getElementById("output").innerHTML = `<div class="error">API에서 데이터를 가져오지 못했습니다.</div>`;
+            document.getElementById(
+              "output"
+            ).innerHTML = `<div class="error">API에서 데이터를 가져오지 못했습니다.</div>`;
             return;
           }
 
@@ -157,7 +163,9 @@
           updateTimestamp();
         } catch (e) {
           console.error("Error during updateData:", e);
-          document.getElementById("output").innerHTML = `<div class="error">데이터 로딩 중 에러가 발생했습니다: ${e.message}</div>`;
+          document.getElementById(
+            "output"
+          ).innerHTML = `<div class="error">데이터 로딩 중 에러가 발생했습니다: ${e.message}</div>`;
         }
       }
 
