@@ -8,18 +8,6 @@
         font-family: Arial, sans-serif;
         background-color: #f4f4f4;
       }
-      .fixed-header {
-        position: fixed; /* 요소를 화면에 고정시킵니다. */
-        top: 0; /* 화면 상단에 고정합니다. */
-        left: 0; /* 화면 왼쪽에 고정합니다. */
-        width: 100%; /* 화면 전체 너비에 맞춥니다. */
-        padding: 10px;
-        z-index: 100; /* 다른 콘텐츠 위에 표시되도록 설정합니다. */
-      }
-      .content {
-        margin-top: 60px; /* 고정된 헤더만큼 위쪽에 여백을 주어 콘텐츠가 헤더 아래로 들어가도록 합니다. */
-        padding: 20px;
-      }
       .container {
         margin: auto;
         background: white;
@@ -91,14 +79,10 @@
   <body>
     <div class="container">
       <div id="timestamp"></div>
-      <div class="fixed-header" id="iframe-wrapper">
+      <div id="iframe-wrapper">
         <div id="account-output"></div>
       </div>
-      <div
-        class="content"
-        id="output-container"
-        style="display: flex; gap: 20px"
-      >
+      <div id="output-container" style="display: flex; gap: 20px">
         <div id="iframe-container" style="flex: 1; border: 1px solid #ddd">
           <div
             class="two-iframes-row"
