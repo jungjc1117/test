@@ -2,7 +2,7 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <title>계좌평가잔고내역</title>
+    <title>Kiwoom 등락률상위 순위 조회</title>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -10,9 +10,12 @@
         background-color: #f4f4f4;
       }
       .container {
-        max-width: 600px;
+        max-width: 900px;
         margin: auto;
         background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
       }
       h1 {
         text-align: center;
@@ -27,9 +30,12 @@
       table {
         width: 100%;
         border-collapse: collapse;
+        margin-top: 20px;
+        font-size: 0.9em;
       }
       th,
       td {
+        padding: 12px;
         text-align: left;
         border-bottom: 1px solid #ddd;
       }
@@ -52,6 +58,7 @@
   </head>
   <body>
     <div class="container">
+      <h1>키움증권 등락률상위 순위 (Mock API)</h1>
       <div id="timestamp"></div>
       <div id="output"></div>
     </div>
@@ -63,9 +70,16 @@
         secretkey: "egNgDJdNQkg6b8t5UBfGu-pAr0UJwlzGapfVwc73vn0",
       };
 
-      const chartParams5 = {
-        qry_tp: "2", // 1:합산, 2:개별
-        dmst_stex_tp: "KRX", // KRX:한국거래소,NXT:넥스트트레이드
+      const chartParams = {
+        mrkt_tp: "000",
+        sort_tp: "1",
+        trde_qty_cnd: "000",
+        stk_cnd: "4",
+        crd_cnd: "0",
+        updown_incls: "1",
+        pric_cnd: "8",
+        trde_prica_cnd: "5000",
+        stex_tp: "3",
       };
 
       async function fetchToken() {
@@ -82,79 +96,43 @@
         return data.token;
       }
 
-      async function fetchAccount(token) {
-        const url = "https://mockapi.kiwoom.com/api/dostk/acnt";
+      async function fetchFlu_rateRanking(token) {
+        const url = "https://mockapi.kiwoom.com/api/dostk/rkinfo";
         const res = await fetch(url, {
           method: "POST",
           headers: {
             "Content-Type": "application/json;charset=UTF-8",
             authorization: `Bearer ${token}`,
-            "api-id": "kt00018",
+            "api-id": "ka10027",
             "cont-yn": "N",
             "next-key": "",
           },
-          body: JSON.stringify(chartParams5),
+          body: JSON.stringify(chartParams),
         });
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
         const data = await res.json();
-        return data.acnt_evlt_remn_indv_tot || [];
+        return (data.pred_pre_flu_rt_upper || []).map((item) => ({
+          stk_cd: item.stk_cd.replace(/^A|_AL$/, ""),
+          stk_nm: item.stk_nm,
+          cur_prc: Math.abs(parseInt(item.cur_prc)),
+          flu_rt: parseFloat(item.flu_rt),
+          now_trde_qty: parseInt(item.now_trde_qty),
+        }));
       }
 
-      async function ordersell(stk_cd, quantity) {
-        const cleanedStkCd = stk_cd.replace(/^A/, "");
-
-        const chartParams5 = {
-          dmst_stex_tp: "KRX",
-          stk_cd: cleanedStkCd, // 변환된 종목 코드를 사용
-          ord_qty: quantity.toString(),
-          trde_tp: "3",
-          cond_uv: "",
-        };
-
-        try {
-          const token = await fetchToken();
-          const url = "https://mockapi.kiwoom.com/api/dostk/ordr";
-          const res = await fetch(url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json;charset=UTF-8",
-              authorization: `Bearer ${token}`,
-              "api-id": "kt10001",
-              "cont-yn": "N",
-              "next-key": "",
-            },
-            body: JSON.stringify(chartParams5),
-          });
-
-          if (!res.ok) {
-            throw new Error(`HTTP error! status: ${res.status}`);
-          }
-
-          const data = await res.json();
-          console.log("주문 응답:", data);
-          alert(
-            `${stk_cd} 종목에 대해 ${quantity}주 주문이 성공적으로 전송되었습니다.`
-          );
-        } catch (e) {
-          console.error("주문 실패:", e);
-          alert(`주문 실패: ${e.message}`);
-        }
-      }
-
-      function renderTable1(dataList) {
+      // ⚠️ CORRECTED: Moved renderTable outside of fetchFlu_rateRanking
+      function renderTable(dataList) {
         const table = document.createElement("table");
         table.innerHTML = `
           <thead>
             <tr>
-              <th>종목번호</th>
+              <th>종목코드</th>
               <th>종목명</th>
-              <th>수익률(%)</th>
-              <th>매입가</th>
               <th>현재가</th>
-              <th>보유수량</th>
-              <th>매도</th>
+              <th>등락률</th>
+              <th>거래대금</th>
             </tr>
           </thead>
           <tbody>
@@ -162,20 +140,11 @@
               .map(
                 (item) => `
               <tr>
-                <td>${item.stk_cd.replace(/[^0-9]/g, "")}</td>
+                <td>${item.stk_cd.replace(/^A|_AL$/, "")}</td>
                 <td>${item.stk_nm}</td>
-                <td>${parseFloat(item.prft_rt).toFixed(2)}</td>
-                <td>${parseInt(item.pur_pric, 10).toString()}</td>
-                <td>${parseInt(item.cur_prc, 10).toString()}</td>
-                <td>${parseInt(item.rmnd_qty, 10).toString()}</td>
-                <td>
-                        <button onclick="ordersell('${item.stk_cd}', ${parseInt(
-                  item.rmnd_qty,
-                  10
-                ).toString()})">
-                            매도
-                        </button>
-                    </td>
+                <td>${item.cur_prc}</td>
+                <td>${item.flu_rt} %</td>
+                <td>${parseInt(item.cur_prc) * parseInt(item.now_trde_qty)}</td>
               </tr>
             `
               )
@@ -193,22 +162,23 @@
         ).innerText = `최종 업데이트: ${now.toLocaleTimeString()}`;
       }
 
-      async function updateData1() {
+      async function updateData() {
         try {
           document.getElementById(
             "output"
           ).innerHTML = `<div class="loading">데이터 불러오는 중...</div>`;
           const token = await fetchToken();
-          const stockList = await fetchAccount(token);
+          const tradePricaData = await fetchFlu_rateRanking(token);
 
-          if (!stockList || stockList.length === 0) {
+          if (!tradePricaData || tradePricaData.length === 0) {
             document.getElementById(
               "output"
-            ).innerHTML = `<div class="error">API에서 데이터를 가져오지 못했습니다.</div>`;
+            ).innerHTML = `<div class="error">API에서 데이터를 가져오지 못했습니다. Mock API 응답을 확인해주세요.</div>`;
             return;
           }
 
-          renderTable1(stockList);
+          renderTable(tradePricaData);
+          updateTimestamp();
         } catch (e) {
           console.error("Error during updateData:", e);
           document.getElementById(
@@ -217,8 +187,8 @@
         }
       }
 
-      // Initial data load and periodic updates
-      updateData1();
+      updateData();
+      setInterval(updateData, 10000);
     </script>
   </body>
 </html>

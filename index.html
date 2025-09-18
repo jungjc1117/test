@@ -121,6 +121,13 @@
               frameborder="0"
             ></iframe>
           </div>
+          <div
+            id="stock-info-container"
+            class="stock-info-container"
+            style="flex: 1; border: 1px solid #ddd; padding: 10px"
+          >
+            <p id="stock-info-text"></p>
+          </div>
           <iframe
             id="stock-info-frame3"
             name="stock-info-frame3"
@@ -2500,17 +2507,17 @@
       };
 
       const chartParams2 = {
-        trde_upper_tp: "2",
-        amt_qty_tp: "1",
-        mrkt_tp: "P00101",
-        stex_tp: "1",
+        trde_upper_tp: "2", // 1:순매도상위, 2:순매수상위
+        amt_qty_tp: "1", // 1:금액, 2:수량
+        mrkt_tp: "P00101", // P00101:코스피, P10102:코스닥, P00000:전체
+        stex_tp: "1", // 1:KRX, 2:NXT 3.통합
       };
 
       const chartParams3 = {
-        trde_upper_tp: "1",
-        amt_qty_tp: "1",
-        mrkt_tp: "P10102",
-        stex_tp: "1",
+        trde_upper_tp: "1", // 1:순매도상위, 2:순매수상위
+        amt_qty_tp: "1", // 1:금액, 2:수량
+        mrkt_tp: "P10102", // P00101:코스피, P10102:코스닥, P00000:전체
+        stex_tp: "1", // 1:KRX, 2:NXT 3.통합
       };
 
       const chartParams4 = {
@@ -2579,23 +2586,13 @@
         }
       }
 
-      async function ordersell(stk_cd, price) {
-        if (!parseInt(price) || parseInt(price) <= 0) {
-          alert("유효한 가격 정보가 없어 주문할 수 없습니다.");
-          return;
-        }
-
-        const orderQuantity = Math.floor(1000000 / parseInt(price)); // 100만 원어치 주문
-        if (orderQuantity === 0) {
-          alert("100만 원으로 주문할 수 있는 수량이 없습니다.");
-          return;
-        }
+      async function ordersell(stk_cd, quantity) {
+        const cleanedStkCd = stk_cd.replace(/^A/, "");
 
         const chartParams5 = {
           dmst_stex_tp: "KRX",
-          stk_cd: stk_cd,
-          ord_qty: orderQuantity.toString(), // 주문수량
-          ord_uv: "",
+          stk_cd: cleanedStkCd, // 변환된 종목 코드를 사용
+          ord_qty: quantity.toString(),
           trde_tp: "3",
           cond_uv: "",
         };
@@ -2622,7 +2619,7 @@
           const data = await res.json();
           console.log("주문 응답:", data);
           alert(
-            `${stk_cd} 종목에 대해 ${orderQuantity}주 주문이 성공적으로 전송되었습니다.`
+            `${stk_cd} 종목에 대해 ${quantity}주 주문이 성공적으로 전송되었습니다.`
           );
         } catch (e) {
           console.error("주문 실패:", e);
@@ -2853,7 +2850,14 @@
           }
         });
 
-        return combinedList;
+        // 유통총액이 2000억 이하인 종목만 필터링
+        const filteredList = combinedList.filter((item) => {
+          const marketCap =
+            (parseInt(item.유통주식수) * parseInt(item.price)) / 100000000;
+          return marketCap >= 2000;
+        });
+
+        return filteredList;
       }
 
       function updateIframes() {
@@ -2866,20 +2870,23 @@
         frame2.src = `https://t1.daumcdn.net/media/finance/chart/kr/daumindex/d/QGG01P.png?timestamp=${timestamp}`;
       }
 
-      function showDualCharts(event, stk_cd) {
-        event.preventDefault(); // Prevents the default link behavior of navigating to '#'
+      function showDualCharts(event, stk_cd, stk_nm, price, flu_rt) {
+        event.preventDefault();
 
         const timestamp = new Date().getTime();
 
-        // The two chart URLs
+        // New way to display info
+        const info = `${stk_cd} ${stk_nm} ${price} ${flu_rt}`;
+        const infoTextElement = document.getElementById("stock-info-text");
+        infoTextElement.textContent = info;
+
+        // Existing logic for the other iframes
         const url1 = `https://t1.daumcdn.net/media/finance/chart/kr/stock/d/A${stk_cd}.png?timestamp=${timestamp}/home`;
         const url2 = `https://t1.daumcdn.net/media/finance/chart/kr/candle/d/A${stk_cd}.png?timestamp=${timestamp}/home`;
 
-        // Get the two iframes by their IDs
         const iframe3 = document.getElementById("stock-info-frame3");
         const iframe4 = document.getElementById("stock-info-frame4");
 
-        // Set the src attribute of each iframe to the respective URL
         iframe3.src = url1;
         iframe4.src = url2;
       }
@@ -2910,7 +2917,6 @@
         table.innerHTML = `
           <thead>
             <tr>
-              <th>코드</th>
               <th>종합정보</th>
               <th>종목명</th>
               <th>현재가</th>
@@ -2919,7 +2925,6 @@
               <th>거래(억)</th>
               <th>유통총액(억)</th>
               <th>매수</th>
-              <th>매도</th>
             </tr>
           </thead>
           <tbody>
@@ -2928,14 +2933,11 @@
                 (item) => `
                 <tr>
                     <td>
-                        <button onclick="copyToClipboard('${item.stk_cd}')">
-                            ${item.stk_cd}
-                        </button>
-                    </td>
-                    <td>
                       <a href="#" onclick="showDualCharts(event, '${
                         item.stk_cd
-                      }')" rel="noopener noreferrer">...</a>
+                      }', '${item.stk_nm}', '${item.price}', '${
+                  item.flu_rt
+                }')" rel="noopener noreferrer">...</a>
                     </td>
                     <td>${item.stk_nm || "-"}</td>
                     <td>${item.price || "-"}</td>
@@ -2954,13 +2956,7 @@
                             매수
                         </button>
                     </td>
-                    <td>
-                        <button onclick="ordersell('${item.stk_cd}', ${
-                  item.price
-                })">
-                            매도
-                        </button>
-                    </td>
+                    
                 </tr>`
               )
               .join("")}
@@ -2985,6 +2981,7 @@
                     <th>매입가</th>
                     <th>현재가</th>
                     <th>보유수량</th>
+                    <th>매도</th>
                 </tr>
             </thead>
             <tbody>
@@ -2992,12 +2989,18 @@
                   .map(
                     (item) => `
                     <tr>
-                        <td>${item.stk_cd.replace(/^0+/, "")}</td>
+                        <td>${item.stk_cd.replace(/[^0-9]/g, "")}</td>
                         <td>${item.stk_nm}</td>
                         <td>${parseFloat(item.prft_rt).toFixed(2)}</td>
                         <td>${parseInt(item.pur_pric, 10).toString()}</td>
                         <td>${parseInt(item.cur_prc, 10).toString()}</td>
                         <td>${parseInt(item.rmnd_qty, 10).toString()}</td>
+                        <td>
+                        <button onclick="ordersell('${item.stk_cd}', ${parseInt(
+                      item.rmnd_qty,
+                      10
+                    )})"> 매도 </button>
+                    </td>
                     </tr>
                 `
                   )
@@ -3086,7 +3089,7 @@
           if (!stockList || stockList.length === 0) {
             document.getElementById(
               "account-output"
-            ).innerHTML = `<div class="error">API에서 데이터를 가져오지 못했습니다.</div>`;
+            ).innerHTML = `<div class="error">잔고가 없습니다.</div>`;
             return;
           }
 
