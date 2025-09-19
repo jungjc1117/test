@@ -43,7 +43,6 @@
       #account-output table {
         margin-left: auto;
         margin-right: 0;
-        max-width: 800px;
         width: 100%;
         border-collapse: collapse;
         font-size: 0.9em;
@@ -79,9 +78,7 @@
   <body>
     <div class="container">
       <div id="timestamp"></div>
-      <div id="iframe-wrapper">
-        <div id="account-output"></div>
-      </div>
+
       <div id="output-container" style="display: flex; gap: 20px">
         <div id="iframe-container" style="flex: 1; border: 1px solid #ddd">
           <div
@@ -110,20 +107,28 @@
           >
             <p id="stock-info-text"></p>
           </div>
-          <img
-            id="stock-info-img3"
-            src=""
-            width="100%"
-            height="700px"
-            style="border: 0"
-          />
-          <img
-            id="stock-info-img4"
-            src=""
-            width="100%"
-            height="700px"
-            style="border: 0"
-          />
+          <div
+            class="two-iframes-row"
+            style="display: flex; gap: 10px; margin-bottom: 10px"
+          >
+            <img
+              id="stock-info-img4"
+              src=""
+              width="100%"
+              height="500px"
+              style="border: 0"
+            />
+            <img
+              id="stock-info-img3"
+              src=""
+              width="100%"
+              height="500px"
+              style="border: 0"
+            />
+          </div>
+          <div id="iframe-wrapper">
+            <div id="account-output"></div>
+          </div>
         </div>
         <div id="output" style="flex: 1"></div>
       </div>
@@ -132,12 +137,17 @@
     <script>
       function updateTimestamp() {
         const timestampDiv = document.getElementById("timestamp");
+
         const now = new Date();
+
         const formattedTime = now.toLocaleTimeString("ko-KR", {
           hour: "2-digit",
+
           minute: "2-digit",
+
           second: "2-digit",
         });
+
         timestampDiv.innerText = `마지막 업데이트: ${formattedTime}`;
       }
 
@@ -2487,26 +2497,35 @@
 
       const chartParams2 = {
         trde_upper_tp: "2", // 1:순매도상위, 2:순매수상위
+
         amt_qty_tp: "1", // 1:금액, 2:수량
+
         mrkt_tp: "P00101", // P00101:코스피, P10102:코스닥, P00000:전체
+
         stex_tp: "3", // 1:KRX, 2:NXT 3.통합
       };
 
       const chartParams3 = {
         trde_upper_tp: "2", // 1:순매도상위, 2:순매수상위
+
         amt_qty_tp: "1", // 1:금액, 2:수량
+
         mrkt_tp: "P10102", // P00101:코스피, P10102:코스닥, P00000:전체
+
         stex_tp: "1", // 1:KRX, 2:NXT 3.통합
       };
 
       const chartParams4 = {
         mrkt_tp: "000", //000:전체, 001:코스피, 101:코스닥
+
         mang_stk_incls: "0", //0:관리종목 미포함, 1:관리종목 포함
+
         stex_tp: "3", //1:KRX, 2:NXT 3.통합
       };
 
       const chartParams5 = {
         qry_tp: "2", // 1:합산, 2:개별
+
         dmst_stex_tp: "KRX", // KRX:한국거래소,NXT:넥스트트레이드
       };
 
@@ -2517,36 +2536,52 @@
       async function orderbuy(stk_cd, price) {
         if (!parseInt(price) || parseInt(price) <= 0) {
           alert("유효한 가격 정보가 없어 주문할 수 없습니다.");
+
           return;
         }
 
         const orderQuantity = Math.floor(1000000 / parseInt(price)); // 100만 원어치 주문
+
         if (orderQuantity === 0) {
           alert("100만 원으로 주문할 수 있는 수량이 없습니다.");
+
           return;
         }
 
         const chartParams5 = {
           dmst_stex_tp: "KRX",
+
           stk_cd: stk_cd,
+
           ord_qty: orderQuantity.toString(), // 주문수량
+
           ord_uv: "",
+
           trde_tp: "3",
+
           cond_uv: "",
         };
 
         try {
           const token = await fetchToken();
+
           const url = "https://mockapi.kiwoom.com/api/dostk/ordr";
+
           const res = await fetch(url, {
             method: "POST",
+
             headers: {
               "Content-Type": "application/json;charset=UTF-8",
+
               authorization: `Bearer ${token}`,
+
               "api-id": "kt10000",
+
               "cont-yn": "N",
+
               "next-key": "",
             },
+
             body: JSON.stringify(chartParams5),
           });
 
@@ -2555,12 +2590,15 @@
           }
 
           const data = await res.json();
+
           console.log("주문 응답:", data);
+
           alert(
             `${stk_cd} 종목에 대해 ${orderQuantity}주 주문이 성공적으로 전송되었습니다.`
           );
         } catch (e) {
           console.error("주문 실패:", e);
+
           alert(`주문 실패: ${e.message}`);
         }
       }
@@ -2570,24 +2608,36 @@
 
         const chartParams5 = {
           dmst_stex_tp: "KRX",
+
           stk_cd: cleanedStkCd, // 변환된 종목 코드를 사용
+
           ord_qty: quantity.toString(),
+
           trde_tp: "3",
+
           cond_uv: "",
         };
 
         try {
           const token = await fetchToken();
+
           const url = "https://mockapi.kiwoom.com/api/dostk/ordr";
+
           const res = await fetch(url, {
             method: "POST",
+
             headers: {
               "Content-Type": "application/json;charset=UTF-8",
+
               authorization: `Bearer ${token}`,
+
               "api-id": "kt10001",
+
               "cont-yn": "N",
+
               "next-key": "",
             },
+
             body: JSON.stringify(chartParams5),
           });
 
@@ -2596,99 +2646,147 @@
           }
 
           const data = await res.json();
+
           console.log("주문 응답:", data);
+
           alert(
             `${stk_cd} 종목에 대해 ${quantity}주 주문이 성공적으로 전송되었습니다.`
           );
         } catch (e) {
           console.error("주문 실패:", e);
+
           alert(`주문 실패: ${e.message}`);
         }
       }
 
       async function fetchToken() {
         const url = "https://mockapi.kiwoom.com/oauth2/token";
+
         const res = await fetch(url, {
           method: "POST",
+
           headers: { "Content-Type": "application/json;charset=UTF-8" },
+
           body: JSON.stringify(accessParams),
         });
+
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
+
         const data = await res.json();
+
         return data.token;
       }
 
       async function fetchAccount(token) {
         const url = "https://mockapi.kiwoom.com/api/dostk/acnt";
+
         const res = await fetch(url, {
           method: "POST",
+
           headers: {
             "Content-Type": "application/json;charset=UTF-8",
+
             authorization: `Bearer ${token}`,
+
             "api-id": "kt00018",
+
             "cont-yn": "N",
+
             "next-key": "",
           },
+
           body: JSON.stringify(chartParams5),
         });
+
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
+
         const data = await res.json();
+
         return data.acnt_evlt_remn_indv_tot || [];
       }
 
       async function fetchTopStocks(token) {
         const url = "https://mockapi.kiwoom.com/api/dostk/stkinfo";
+
         const res = await fetch(url, {
           method: "POST",
+
           headers: {
             "Content-Type": "application/json;charset=UTF-8",
+
             authorization: `Bearer ${token}`,
+
             "api-id": "ka00198",
+
             "cont-yn": "N",
+
             "next-key": "",
           },
+
           body: JSON.stringify(chartParams1),
         });
+
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
+
         const data = await res.json();
+
         return (data.item_inq_rank || []).map((item) => ({
           stk_cd: item.stk_cd,
+
           stk_nm: item.stk_nm,
+
           search_rank: item.bigd_rank,
+
           price: item.past_curr_prc ? Math.abs(item.past_curr_prc) : null,
+
           flu_rt: item.base_comp_chgr,
         }));
       }
 
       async function fetchProgramTradeRanking(token) {
         const url = "https://mockapi.kiwoom.com/api/dostk/stkinfo";
+
         const res = await fetch(url, {
           method: "POST",
+
           headers: {
             "Content-Type": "application/json;charset=UTF-8",
+
             authorization: `Bearer ${token}`,
+
             "api-id": "ka90003",
+
             "cont-yn": "N",
+
             "next-key": "",
           },
+
           body: JSON.stringify(chartParams2),
         });
+
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
+
         const data = await res.json();
+
         return (data.prm_netprps_upper_50 || []).map((item) => ({
           stk_cd: item.stk_cd,
+
           stk_nm: item.stk_nm,
+
           prm_rank: item.rank,
+
           price: item.cur_prc ? Math.abs(item.cur_prc) : null,
+
           flu_rt: item.flu_rt,
+
           prm_netprps_amt: item.prm_netprps_amt
             ? (item.prm_netprps_amt / 100).toFixed()
             : null,
@@ -2697,27 +2795,42 @@
 
       async function fetchProgramTradeRanking1(token) {
         const url = "https://mockapi.kiwoom.com/api/dostk/stkinfo";
+
         const res = await fetch(url, {
           method: "POST",
+
           headers: {
             "Content-Type": "application/json;charset=UTF-8",
+
             authorization: `Bearer ${token}`,
+
             "api-id": "ka90003",
+
             "cont-yn": "N",
+
             "next-key": "",
           },
+
           body: JSON.stringify(chartParams3),
         });
+
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
+
         const data = await res.json();
+
         return (data.prm_netprps_upper_50 || []).map((item) => ({
           stk_cd: item.stk_cd,
+
           stk_nm: item.stk_nm,
+
           prm_rank: item.rank,
+
           price: item.cur_prc ? Math.abs(item.cur_prc) : null,
+
           flu_rt: item.flu_rt,
+
           prm_netprps_amt: item.prm_netprps_amt
             ? (item.prm_netprps_amt / 100).toFixed()
             : null,
@@ -2726,27 +2839,42 @@
 
       async function fetchTradePricaRanking(token) {
         const url = "https://mockapi.kiwoom.com/api/dostk/rkinfo";
+
         const res = await fetch(url, {
           method: "POST",
+
           headers: {
             "Content-Type": "application/json;charset=UTF-8",
+
             authorization: `Bearer ${token}`,
+
             "api-id": "ka10032",
+
             "cont-yn": "N",
+
             "next-key": "",
           },
+
           body: JSON.stringify(chartParams4),
         });
+
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
+
         const data = await res.json();
+
         return (data.trde_prica_upper || []).map((item) => ({
           stk_cd: item.stk_cd ? item.stk_cd.substring(0, 6) : null, // Normalize stk_cd
+
           stk_nm: item.stk_nm,
+
           now_rank: item.now_rank,
+
           price: item.cur_prc ? Math.abs(item.cur_prc) : null,
+
           flu_rt: item.flu_rt,
+
           trde_prica: item.trde_prica
             ? (item.trde_prica / 100).toFixed()
             : null,
@@ -2755,26 +2883,35 @@
 
       function combineData(
         stockList,
+
         programTradeData,
+
         programTradeData1,
+
         tradePricaData
       ) {
         // Added tradePricaData parameter
+
         const combinedMap = new Map();
 
         // 1. 조회 순위 데이터를 먼저 Map에 추가
+
         stockList.forEach((item) => {
           combinedMap.set(item.stk_cd, { ...item });
         });
 
         // 2. 프로그램 순매수 데이터를 병합
+
         programTradeData.forEach((item) => {
           const existingItem = combinedMap.get(item.stk_cd);
+
           if (existingItem) {
             Object.assign(existingItem, item);
+
             if (item.price) {
               existingItem.price = item.price;
             }
+
             if (item.flu_rt) {
               existingItem.flu_rt = item.flu_rt;
             }
@@ -2784,13 +2921,17 @@
         });
 
         // 2. 프로그램 순매도 데이터를 병합
+
         programTradeData1.forEach((item) => {
           const existingItem = combinedMap.get(item.stk_cd);
+
           if (existingItem) {
             Object.assign(existingItem, item);
+
             if (item.price) {
               existingItem.price = item.price;
             }
+
             if (item.flu_rt) {
               existingItem.flu_rt = item.flu_rt;
             }
@@ -2800,13 +2941,17 @@
         });
 
         // 4. 거래대금 데이터를 병합
+
         tradePricaData.forEach((item) => {
           const existingItem = combinedMap.get(item.stk_cd);
+
           if (existingItem) {
             Object.assign(existingItem, item);
+
             if (item.price) {
               existingItem.price = item.price;
             }
+
             if (item.flu_rt) {
               existingItem.flu_rt = item.flu_rt;
             }
@@ -2816,23 +2961,31 @@
         });
 
         // 5. combinedMap의 항목을 순회하며 stockInfoMap의 정보를 추가하고 필터링
+
         const combinedList = [];
+
         combinedMap.forEach((item, stk_cd) => {
           const stockInfo = stockInfoMap.get(stk_cd);
+
           if (stockInfo) {
             // stockInfoList에 존재하는 종목에만 발행주식수와 유통주식수를 추가
+
             combinedList.push({
               ...item,
+
               발행주식수: stockInfo.발행주식수,
+
               유통주식수: stockInfo.유통주식수,
             });
           }
         });
 
         // 유통총액이 2000억 이하인 종목만 필터링
+
         const filteredList = combinedList.filter((item) => {
           const marketCap =
             (parseInt(item.유통주식수) * parseInt(item.price)) / 100000000;
+
           return marketCap >= 2000;
         });
 
@@ -2843,9 +2996,11 @@
         const timestamp = new Date().getTime();
 
         const img1 = document.getElementById("stock-info-img1");
+
         img1.src = `https://t1.daumcdn.net/media/finance/chart/kr/daumindex/d/KGG01P.png?timestamp=${timestamp}`;
 
         const img2 = document.getElementById("stock-info-img2");
+
         img2.src = `https://t1.daumcdn.net/media/finance/chart/kr/daumindex/d/QGG01P.png?timestamp=${timestamp}`;
       }
 
@@ -2855,143 +3010,221 @@
         const timestamp = new Date().getTime();
 
         // Display stock information
+
         const info = `${stk_cd} ${stk_nm} ${price} ${flu_rt}`;
+
         const infoTextElement = document.getElementById("stock-info-text");
+
         infoTextElement.textContent = info;
 
         // Update image sources for detailed charts
-        const url1 = `https://t1.daumcdn.net/media/finance/chart/kr/stock/d/A${stk_cd}.png?timestamp=${timestamp}/home`;
-        const url2 = `https://t1.daumcdn.net/media/finance/chart/kr/candle/d/A${stk_cd}.png?timestamp=${timestamp}/home`;
 
         const img3 = document.getElementById("stock-info-img3");
+
+        img3.src = `https://t1.daumcdn.net/media/finance/chart/kr/stock/d/A${stk_cd}.png?timestamp=${timestamp}/home`;
+
         const img4 = document.getElementById("stock-info-img4");
 
-        img3.src = url1;
-        img4.src = url2;
+        img4.src = `https://t1.daumcdn.net/media/finance/chart/kr/candle/d/A${stk_cd}.png?timestamp=${timestamp}/home`;
       }
 
       // *** Moved copyToClipboard to the global scope ***
+
       function copyToClipboard(text) {
         navigator.clipboard
+
           .writeText(text)
+
           .then(() => {
             // alert(`'${text}' 종목코드가 클립보드에 복사되었습니다!`);
           })
+
           .catch((err) => {
             console.error("클립보드 복사 실패:", err);
+
             alert("클립보드 복사에 실패했습니다.");
           });
       }
 
       function renderTable(data) {
         // Get the output div and set its styles first
+
         const outputDiv = document.getElementById("output");
+
         outputDiv.style.height = "2000px";
+
         outputDiv.style.overflowY = "auto";
 
         // Create the table element
+
         const table = document.createElement("table");
 
         // Populate the table with the HTML string
+
         table.innerHTML = `
+
           <thead>
+
             <tr>
-              <th>정보</th>
+
               <th>종목명</th>
+
               <th>현재가</th>
+
               <th>등락률</th>
+
               <th>프로</th>
+
               <th>거래</th>
+
               <th>유통총액</th>
+
               <th>매수</th>
+
             </tr>
+
           </thead>
+
           <tbody>
+
             ${data
+
               .map(
                 (item) => `
+
                 <tr>
-                    <td>
-                      <a href="#" onclick="showDualCharts(event, '${
-                        item.stk_cd
-                      }', '${item.stk_nm}', '${item.price}', '${
+
+                    <td><a href="#" onclick="showDualCharts(event, '${
+                      item.stk_cd
+                    }', '${item.stk_nm}', '${item.price}', '${
                   item.flu_rt
-                }')" rel="noopener noreferrer">...</a>
-                    </td>
-                    <td>${item.stk_nm || "-"}</td>
+                }')" rel="noopener noreferrer">${item.stk_nm || "-"}</a></td>
+
                     <td>${item.price || "-"}</td>
+
                     <td>${item.flu_rt || "-"}</td>
+
                     <td>${item.prm_netprps_amt || "-"}</td>
+
                     <td>${item.trde_prica || "-"}</td>
+
                     <td>${
                       ((item.유통주식수 * item.price) / 100000000).toFixed(0) ||
                       "-"
                     }</td>
 
+
                     <td>
+
                         <button onclick="orderbuy('${item.stk_cd}', ${
                   item.price
                 })">BUY</button>
+
                     </td>
-                    
+
+                   
+
                 </tr>`
               )
+
               .join("")}
+
         </tbody>
+
         `;
 
         // Clear any existing content in the output div
+
         outputDiv.innerHTML = "";
 
         // Append the created table to the output div
+
         outputDiv.appendChild(table);
       }
 
       function renderTable1(dataList) {
         const table = document.createElement("table");
+
         table.innerHTML = `
+
             <thead>
+
                 <tr>
-                    <th>정보</th>
+
                     <th>종목명</th>
+
                     <th>수익률(%)</th>
+
                     <th>매입가</th>
+
                     <th>현재가</th>
+
                     <th>보유수량</th>
+
+                    <th>매수</th>
+
                     <th>매도</th>
+
                 </tr>
+
             </thead>
+
             <tbody>
+
                 ${dataList
+
                   .map(
                     (item) => `
+
                     <tr>
-                        <td>
-                      <a href="#" onclick="showDualCharts(event, '${item.stk_cd.replace(
-                        /^A/,
-                        ""
-                      )}', '${item.stk_nm}', '${item.price}', '${
+
+                        <td><a href="#" onclick="showDualCharts(event, '${item.stk_cd.replace(
+                          /^A/,
+
+                          ""
+                        )}', '${item.stk_nm}', '${item.price}', '${
                       item.flu_rt
-                    }')" rel="noopener noreferrer">...</a>
-                    </td>
-                        <td>${item.stk_nm}</td>
+                    }')" rel="noopener noreferrer">${item.stk_nm}</a></td>
+
                         <td>${parseFloat(item.prft_rt).toFixed(2)}</td>
+
                         <td>${parseInt(item.pur_pric, 10).toString()}</td>
+
                         <td>${parseInt(item.cur_prc, 10).toString()}</td>
+
                         <td>${parseInt(item.rmnd_qty, 10).toString()}</td>
+
                         <td>
+
+                        <button onclick="orderbuy('${item.stk_cd.replace(
+                          /^A/,
+
+                          ""
+                        )}', ${parseInt(item.cur_prc, 10)})">BUY</button>
+
+                        <td>
+
                         <button onclick="ordersell('${item.stk_cd}', ${parseInt(
                       item.rmnd_qty,
+
                       10
                     )})">SELL</button>
+
                     </td>
+
                     </tr>
+
                 `
                   )
+
                   .join("")}
+
             </tbody>
+
         `;
+
         document.getElementById("account-output").innerHTML = "";
+
         document.getElementById("account-output").appendChild(table);
       }
 
@@ -3004,27 +3237,35 @@
           const token = await fetchToken();
 
           const stockList = await fetchTopStocks(token);
+
           await delay(4000);
 
           const programTradeData = await fetchProgramTradeRanking(token);
+
           if (!stockList.length && !programTradeData.length) {
             document.getElementById(
               "output"
             ).innerHTML = `<div class="error">데이터를 가져오지 못했습니다.</div>`;
+
             return;
           }
+
           await delay(4000);
 
           const programTradeData1 = await fetchProgramTradeRanking1(token);
+
           if (!programTradeData.length && !programTradeData1.length) {
             document.getElementById(
               "output"
             ).innerHTML = `<div class="error">데이터를 가져오지 못했습니다.</div>`;
+
             return;
           }
+
           await delay(4000);
 
           const tradePricaData = await fetchTradePricaRanking(token);
+
           if (
             !programTradeData1.length &&
             !programTradeData.length &&
@@ -3034,28 +3275,36 @@
             document.getElementById(
               "output"
             ).innerHTML = `<div class="error">데이터를 가져오지 못했습니다.</div>`;
+
             return;
           }
 
           const combinedData = combineData(
             stockList,
+
             programTradeData,
+
             programTradeData1,
+
             tradePricaData
           );
 
           // Check if combinedData is empty after merging
+
           if (combinedData.length === 0) {
             document.getElementById(
               "output"
             ).innerHTML = `<div class="error">데이터 병합 후 결과가 없습니다.</div>`;
+
             return;
           }
 
           renderTable(combinedData);
+
           updateTimestamp();
         } catch (e) {
           console.error("Error during updateData:", e);
+
           document.getElementById(
             "output"
           ).innerHTML = `<div class="error">데이터 로딩 중 에러가 발생했습니다: ${e.message}</div>`;
@@ -3067,19 +3316,23 @@
           document.getElementById(
             "account-output"
           ).innerHTML = `<div class="loading">데이터 불러오는 중...</div>`;
+
           const token = await fetchToken();
+
           const stockList = await fetchAccount(token);
 
           if (!stockList || stockList.length === 0) {
             document.getElementById(
               "account-output"
             ).innerHTML = `<div class="error">잔고가 없습니다.</div>`;
+
             return;
           }
 
           renderTable1(stockList);
         } catch (e) {
           console.error("Error during updateData:", e);
+
           document.getElementById(
             "account-output"
           ).innerHTML = `<div class="error">데이터 로딩 중 에러가 발생했습니다: ${e.message}</div>`;
@@ -3089,11 +3342,14 @@
       document.getElementById(
         "output"
       ).innerHTML = `<div class="loading">데이터를 불러오는 중입니다. 잠시만 기다려주세요...</div>`;
-      updateData();
-      updateData1();
-      updateImages();
-      showDualCharts();
-      setInterval(updateData, 15000);
+
+      setInterval(() => {
+        updateData();
+        updateData1();
+        updateImages();
+        showDualCharts();
+        updateTimestamp(); // Initial call for immediate display
+      }, 15000);
     </script>
   </body>
 </html>
