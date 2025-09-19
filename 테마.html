@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Kiwoom 테마 조회</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+      .container {
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        text-align: center;
+        color: #333;
+      }
+      #timestamp {
+        text-align: right;
+        font-size: 0.9em;
+        color: #777;
+        margin-bottom: 20px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+      th {
+        background-color: #f2f2f2;
+        color: #555;
+      }
+      tr:hover {
+        background-color: #f9f9f9;
+      }
+      .loading {
+        text-align: center;
+        color: #888;
+      }
+      .error {
+        color: red;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>키움증권 테마 (Mock API)</h1>
+      <div id="timestamp"></div>
+      <div id="output"></div>
+    </div>
+
+    <script>
+      const accessParams = {
+        grant_type: "client_credentials",
+        appkey: "oJ5S3eaEUVsSaxPX7vkiOPjOI9_yvkFGm3lwAkd_fAg",
+        secretkey: "lA1nom_3Ql1TX1rUpppvwhRJBuEQ44cECAYn7lCGgps",
+      };
+
+      const chartParams = {
+        qry_tp: "1", // 0:전체검색, 1:테마검색, 2:종목검색
+        stk_cd: "", // 검색하려는 종목코드
+        date_tp: "0", // n일전 (1일 ~ 99일 날짜입력)
+        thema_nm: "", // 검색하려는 테마명
+        flu_pl_amt_tp: "3", // 1:상위기간수익률, 2:하위기간수익률, 3:상위등락률, 4:하위등락률
+        stex_tp: "3", // 1:KRX, 2:NXT 3.통합
+      };
+
+      async function fetchToken() {
+        const url = "https://mockapi.kiwoom.com/oauth2/token";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json;charset=UTF-8" },
+          body: JSON.stringify(accessParams),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        return data.token;
+      }
+
+      async function fetchTheme(token) {
+        const url = "https://mockapi.kiwoom.com/api/dostk/thme";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            authorization: `Bearer ${token}`,
+            "api-id": "ka90001",
+            "cont-yn": "N",
+            "next-key": "",
+          },
+          body: JSON.stringify(chartParams),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        return data.thema_grp || [];
+      }
+
+      function renderTable(dataList) {
+        const table = document.createElement("table");
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>테마그룹코드</th>
+              <th>테마명</th>
+              <th>등락율</th>
+              <th>기간수익률</th>
+              <th>종목수</th>
+              <th>상승종목수</th>
+              <th>하락종목수</th>
+              <th>주요종목</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${dataList
+              .map(
+                (item) => `
+              <tr>
+                <td>${item.thema_grp_cd}</td>
+                <td>${item.thema_nm}</td>
+                <td>${item.flu_rt}</td>
+                <td>${item.dt_prft_rt}</td>
+                <td>${item.stk_num}</td>
+                <td>${item.rising_stk_num}</td>
+                <td>${item.fall_stk_num}</td>
+                <td>${item.main_stk}</td>
+              </tr>
+            `
+              )
+              .join("")}
+          </tbody>
+        `;
+        document.getElementById("output").innerHTML = "";
+        document.getElementById("output").appendChild(table);
+      }
+
+      function updateTimestamp() {
+        const now = new Date();
+        document.getElementById(
+          "timestamp"
+        ).innerText = `최종 업데이트: ${now.toLocaleTimeString()}`;
+      }
+
+      async function updateData() {
+        try {
+          document.getElementById(
+            "output"
+          ).innerHTML = `<div class="loading">데이터 불러오는 중...</div>`;
+          const token = await fetchToken();
+          const stockList = await fetchTheme(token);
+
+          if (!stockList || stockList.length === 0) {
+            document.getElementById(
+              "output"
+            ).innerHTML = `<div class="error">API에서 데이터를 가져오지 못했습니다.</div>`;
+            return;
+          }
+
+          renderTable(stockList);
+          updateTimestamp();
+        } catch (e) {
+          console.error("Error during updateData:", e);
+          document.getElementById(
+            "output"
+          ).innerHTML = `<div class="error">데이터 로딩 중 에러가 발생했습니다: ${e.message}</div>`;
+        }
+      }
+
+      // Initial data load and periodic updates
+      updateData();
+      setInterval(updateData, 10000); // Update every 10 seconds
+    </script>
+  </body>
+</html>
