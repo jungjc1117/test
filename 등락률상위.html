@@ -35,7 +35,7 @@
       }
       th,
       td {
-        padding: 12px;
+        /* padding: 12px; */
         text-align: left;
         border-bottom: 1px solid #ddd;
       }
@@ -70,18 +70,72 @@
         secretkey: "lA1nom_3Ql1TX1rUpppvwhRJBuEQ44cECAYn7lCGgps",
       };
 
-      const chartParams6 = {
-        mrkt_tp: "000",
-        sort_tp: "1",
-        trde_qty_cnd: "000",
-        stk_cnd: "4",
-        crd_cnd: "0",
-        updown_incls: "1",
-        pric_cnd: "8",
-        trde_prica_cnd: "5000",
-        stex_tp: "3",
+      const fluKospiUp = {
+        mrkt_tp: "001", //000:전체, 001:코스피, 101:코스닥
+        sort_tp: "1", //1:상승률, 2:상승폭, 3:하락률, 4:하락폭, 5:보합
+        trde_qty_cnd: "0000", //0000:전체조회, 0010:만주이상, 0050:5만주이상, 0100:10만주이상, 0150:15만주이상, 0200:20만주이상, 0300:30만주이상, 0500:50만주이상, 1000:백만주이상
+        stk_cnd: "16", //0:전체조회, 1:관리종목제외, 4:우선주+관리주제외, 3:우선주제외, 5:증100제외, 6:증100만보기, 7:증40만보기, 8:증30만보기, 9:증20만보기, 11:정리매매종목제외, 12:증50만보기, 13:증60만보기, 14:ETF제외, 15:스펙제외, 16:ETF+ETN제외
+        crd_cnd: "0", //0:전체조회, 1:신용융자A군, 2:신용융자B군, 3:신용융자C군, 4:신용융자D군, 7:신용융자E군, 9:신용융자전체
+        updown_incls: "1", //0:불 포함, 1:포함
+        pric_cnd: "8", //0:전체조회, 1:1천원미만, 2:1천원~2천원, 3:2천원~5천원, 4:5천원~1만원, 5:1만원이상, 8:1천원이상, 10: 1만원미만
+        trde_prica_cnd: "0", //0:전체조회, 3:3천만원이상, 5:5천만원이상, 10:1억원이상, 30:3억원이상, 50:5억원이상, 100:10억원이상, 300:30억원이상, 500:50억원이상, 1000:100억원이상, 3000:300억원이상, 5000:500억원이상
+        stex_tp: "3", //1:KRX, 2:NXT 3.통합
       };
-
+      const fluKosdaqUp = {
+        mrkt_tp: "101", //000:전체, 001:코스피, 101:코스닥
+        sort_tp: "1", //1:상승률, 2:상승폭, 3:하락률, 4:하락폭, 5:보합
+        trde_qty_cnd: "0000", //0000:전체조회, 0010:만주이상, 0050:5만주이상, 0100:10만주이상, 0150:15만주이상, 0200:20만주이상, 0300:30만주이상, 0500:50만주이상, 1000:백만주이상
+        stk_cnd: "16", //0:전체조회, 1:관리종목제외, 4:우선주+관리주제외, 3:우선주제외, 5:증100제외, 6:증100만보기, 7:증40만보기, 8:증30만보기, 9:증20만보기, 11:정리매매종목제외, 12:증50만보기, 13:증60만보기, 14:ETF제외, 15:스펙제외, 16:ETF+ETN제외
+        crd_cnd: "0", //0:전체조회, 1:신용융자A군, 2:신용융자B군, 3:신용융자C군, 4:신용융자D군, 7:신용융자E군, 9:신용융자전체
+        updown_incls: "1", //0:불 포함, 1:포함
+        pric_cnd: "8", //0:전체조회, 1:1천원미만, 2:1천원~2천원, 3:2천원~5천원, 4:5천원~1만원, 5:1만원이상, 8:1천원이상, 10: 1만원미만
+        trde_prica_cnd: "0", //0:전체조회, 3:3천만원이상, 5:5천만원이상, 10:1억원이상, 30:3억원이상, 50:5억원이상, 100:10억원이상, 300:30억원이상, 500:50억원이상, 1000:100억원이상, 3000:300억원이상, 5000:500억원이상
+        stex_tp: "3", //1:KRX, 2:NXT 3.통합
+      };
+      const fluKospiDown = {
+        mrkt_tp: "001", //000:전체, 001:코스피, 101:코스닥
+        sort_tp: "3", //1:상승률, 2:상승폭, 3:하락률, 4:하락폭, 5:보합
+        trde_qty_cnd: "0000", //0000:전체조회, 0010:만주이상, 0050:5만주이상, 0100:10만주이상, 0150:15만주이상, 0200:20만주이상, 0300:30만주이상, 0500:50만주이상, 1000:백만주이상
+        stk_cnd: "16", //0:전체조회, 1:관리종목제외, 4:우선주+관리주제외, 3:우선주제외, 5:증100제외, 6:증100만보기, 7:증40만보기, 8:증30만보기, 9:증20만보기, 11:정리매매종목제외, 12:증50만보기, 13:증60만보기, 14:ETF제외, 15:스펙제외, 16:ETF+ETN제외
+        crd_cnd: "0", //0:전체조회, 1:신용융자A군, 2:신용융자B군, 3:신용융자C군, 4:신용융자D군, 7:신용융자E군, 9:신용융자전체
+        updown_incls: "1", //0:불 포함, 1:포함
+        pric_cnd: "8", //0:전체조회, 1:1천원미만, 2:1천원~2천원, 3:2천원~5천원, 4:5천원~1만원, 5:1만원이상, 8:1천원이상, 10: 1만원미만
+        trde_prica_cnd: "0", //0:전체조회, 3:3천만원이상, 5:5천만원이상, 10:1억원이상, 30:3억원이상, 50:5억원이상, 100:10억원이상, 300:30억원이상, 500:50억원이상, 1000:100억원이상, 3000:300억원이상, 5000:500억원이상
+        stex_tp: "3", //1:KRX, 2:NXT 3.통합
+      };
+      const fluKosdaqDown = {
+        mrkt_tp: "101", //000:전체, 001:코스피, 101:코스닥
+        sort_tp: "3", //1:상승률, 2:상승폭, 3:하락률, 4:하락폭, 5:보합
+        trde_qty_cnd: "0000", //0000:전체조회, 0010:만주이상, 0050:5만주이상, 0100:10만주이상, 0150:15만주이상, 0200:20만주이상, 0300:30만주이상, 0500:50만주이상, 1000:백만주이상
+        stk_cnd: "16", //0:전체조회, 1:관리종목제외, 4:우선주+관리주제외, 3:우선주제외, 5:증100제외, 6:증100만보기, 7:증40만보기, 8:증30만보기, 9:증20만보기, 11:정리매매종목제외, 12:증50만보기, 13:증60만보기, 14:ETF제외, 15:스펙제외, 16:ETF+ETN제외
+        crd_cnd: "0", //0:전체조회, 1:신용융자A군, 2:신용융자B군, 3:신용융자C군, 4:신용융자D군, 7:신용융자E군, 9:신용융자전체
+        updown_incls: "1", //0:불 포함, 1:포함
+        pric_cnd: "8", //0:전체조회, 1:1천원미만, 2:1천원~2천원, 3:2천원~5천원, 4:5천원~1만원, 5:1만원이상, 8:1천원이상, 10: 1만원미만
+        trde_prica_cnd: "0", //0:전체조회, 3:3천만원이상, 5:5천만원이상, 10:1억원이상, 30:3억원이상, 50:5억원이상, 100:10억원이상, 300:30억원이상, 500:50억원이상, 1000:100억원이상, 3000:300억원이상, 5000:500억원이상
+        stex_tp: "3", //1:KRX, 2:NXT 3.통합
+      };
+      const fluKospiSame = {
+        mrkt_tp: "001", //000:전체, 001:코스피, 101:코스닥
+        sort_tp: "5", //1:상승률, 2:상승폭, 3:하락률, 4:하락폭, 5:보합
+        trde_qty_cnd: "0000", //0000:전체조회, 0010:만주이상, 0050:5만주이상, 0100:10만주이상, 0150:15만주이상, 0200:20만주이상, 0300:30만주이상, 0500:50만주이상, 1000:백만주이상
+        stk_cnd: "16", //0:전체조회, 1:관리종목제외, 4:우선주+관리주제외, 3:우선주제외, 5:증100제외, 6:증100만보기, 7:증40만보기, 8:증30만보기, 9:증20만보기, 11:정리매매종목제외, 12:증50만보기, 13:증60만보기, 14:ETF제외, 15:스펙제외, 16:ETF+ETN제외
+        crd_cnd: "0", //0:전체조회, 1:신용융자A군, 2:신용융자B군, 3:신용융자C군, 4:신용융자D군, 7:신용융자E군, 9:신용융자전체
+        updown_incls: "1", //0:불 포함, 1:포함
+        pric_cnd: "8", //0:전체조회, 1:1천원미만, 2:1천원~2천원, 3:2천원~5천원, 4:5천원~1만원, 5:1만원이상, 8:1천원이상, 10: 1만원미만
+        trde_prica_cnd: "0", //0:전체조회, 3:3천만원이상, 5:5천만원이상, 10:1억원이상, 30:3억원이상, 50:5억원이상, 100:10억원이상, 300:30억원이상, 500:50억원이상, 1000:100억원이상, 3000:300억원이상, 5000:500억원이상
+        stex_tp: "3", //1:KRX, 2:NXT 3.통합
+      };
+      const fluKosdaqSame = {
+        mrkt_tp: "101", //000:전체, 001:코스피, 101:코스닥
+        sort_tp: "5", //1:상승률, 2:상승폭, 3:하락률, 4:하락폭, 5:보합
+        trde_qty_cnd: "0000", //0000:전체조회, 0010:만주이상, 0050:5만주이상, 0100:10만주이상, 0150:15만주이상, 0200:20만주이상, 0300:30만주이상, 0500:50만주이상, 1000:백만주이상
+        stk_cnd: "16", //0:전체조회, 1:관리종목제외, 4:우선주+관리주제외, 3:우선주제외, 5:증100제외, 6:증100만보기, 7:증40만보기, 8:증30만보기, 9:증20만보기, 11:정리매매종목제외, 12:증50만보기, 13:증60만보기, 14:ETF제외, 15:스펙제외, 16:ETF+ETN제외
+        crd_cnd: "0", //0:전체조회, 1:신용융자A군, 2:신용융자B군, 3:신용융자C군, 4:신용융자D군, 7:신용융자E군, 9:신용융자전체
+        updown_incls: "1", //0:불 포함, 1:포함
+        pric_cnd: "8", //0:전체조회, 1:1천원미만, 2:1천원~2천원, 3:2천원~5천원, 4:5천원~1만원, 5:1만원이상, 8:1천원이상, 10: 1만원미만
+        trde_prica_cnd: "0", //0:전체조회, 3:3천만원이상, 5:5천만원이상, 10:1억원이상, 30:3억원이상, 50:5억원이상, 100:10억원이상, 300:30억원이상, 500:50억원이상, 1000:100억원이상, 3000:300억원이상, 5000:500억원이상
+        stex_tp: "3", //1:KRX, 2:NXT 3.통합
+      };
       async function fetchToken() {
         const url = "https://mockapi.kiwoom.com/oauth2/token";
         const res = await fetch(url, {
@@ -96,7 +150,7 @@
         return data.token;
       }
 
-      async function fetchFlu_rateRanking(token) {
+      async function fetchflu(token, params) {
         const url = "https://mockapi.kiwoom.com/api/dostk/rkinfo";
         const res = await fetch(url, {
           method: "POST",
@@ -107,7 +161,7 @@
             "cont-yn": "N",
             "next-key": "",
           },
-          body: JSON.stringify(chartParams6),
+          body: JSON.stringify(params),
         });
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
@@ -122,7 +176,6 @@
         }));
       }
 
-      // ⚠️ CORRECTED: Moved renderTable outside of fetchFlu_rateRanking
       function renderTable(dataList) {
         const table = document.createElement("table");
         table.innerHTML = `
@@ -132,19 +185,20 @@
               <th>종목명</th>
               <th>현재가</th>
               <th>등락률</th>
-              <th>거래대금</th>
+              <th>거래량</th>
             </tr>
           </thead>
           <tbody>
             ${dataList
+              .sort((a, b) => b.flu_rt - a.flu_rt) // Sort by fluctuation rate
               .map(
                 (item) => `
               <tr>
-                <td>${item.stk_cd.replace(/^A|_AL$/, "")}</td>
+                <td>${item.stk_cd}</td>
                 <td>${item.stk_nm}</td>
                 <td>${item.cur_prc}</td>
-                <td>${item.flu_rt} %</td>
-                <td>${parseInt(item.cur_prc) * parseInt(item.now_trde_qty)}</td>
+                <td>${item.flu_rt.toFixed(2)}</td>
+                <td>${item.now_trde_qty}</td>
               </tr>
             `
               )
@@ -155,30 +209,67 @@
         document.getElementById("output").appendChild(table);
       }
 
-      function updateTimestamp() {
+      function updateTimestamp(message = "") {
         const now = new Date();
         document.getElementById(
           "timestamp"
-        ).innerText = `최종 업데이트: ${now.toLocaleTimeString()}`;
+        ).innerText = `${message} 최종 업데이트: ${now.toLocaleTimeString()}`;
+      }
+
+      function delay(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
       }
 
       async function updateData() {
         try {
-          document.getElementById(
-            "output"
-          ).innerHTML = `<div class="loading">데이터 불러오는 중...</div>`;
+          updateTimestamp("업데이트 중... ");
           const token = await fetchToken();
-          const tradePricaData = await fetchFlu_rateRanking(token);
+          const mergedDataMap = new Map();
 
-          if (!tradePricaData || tradePricaData.length === 0) {
-            document.getElementById(
-              "output"
-            ).innerHTML = `<div class="error">API에서 데이터를 가져오지 못했습니다. Mock API 응답을 확인해주세요.</div>`;
-            return;
-          }
+          // Fetch Kospi Up data
+          const fluKospiUpData = await fetchflu(token, fluKospiUp);
+          fluKospiUpData.forEach((item) =>
+            mergedDataMap.set(item.stk_cd, item)
+          );
+          await delay(2000);
 
-          renderTable(tradePricaData);
-          updateTimestamp();
+          // Fetch Kosdaq Up data
+          const fluKosdaqUpData = await fetchflu(token, fluKosdaqUp);
+          fluKosdaqUpData.forEach((item) =>
+            mergedDataMap.set(item.stk_cd, item)
+          );
+          await delay(2000);
+
+          // Fetch Kospi Down data
+          const fluKospiDownData = await fetchflu(token, fluKospiDown);
+          fluKospiDownData.forEach((item) =>
+            mergedDataMap.set(item.stk_cd, item)
+          );
+          await delay(2000);
+
+          // Fetch Kosdaq Down data
+          const fluKosdaqDownData = await fetchflu(token, fluKosdaqDown);
+          fluKosdaqDownData.forEach((item) =>
+            mergedDataMap.set(item.stk_cd, item)
+          );
+          await delay(2000);
+
+          // Fetch Kospi Down data
+          const fluKospiSameData = await fetchflu(token, fluKospiSame);
+          fluKospiSameData.forEach((item) =>
+            mergedDataMap.set(item.stk_cd, item)
+          );
+          await delay(2000);
+
+          // Fetch Kosdaq Down data
+          const fluKosdaqSameData = await fetchflu(token, fluKosdaqSame);
+          fluKosdaqSameData.forEach((item) =>
+            mergedDataMap.set(item.stk_cd, item)
+          );
+
+          const finalData = Array.from(mergedDataMap.values());
+          renderTable(finalData);
+          updateTimestamp("업데이트 완료. ");
         } catch (e) {
           console.error("Error during updateData:", e);
           document.getElementById(

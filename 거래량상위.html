@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Kiwoom 거래량상위</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+      .container {
+        max-width: 900px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        text-align: center;
+        color: #333;
+      }
+      #timestamp {
+        text-align: right;
+        font-size: 0.9em;
+        color: #777;
+        margin-bottom: 20px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        font-size: 0.9em;
+      }
+      th,
+      td {
+        /* padding: 12px; */
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+      th {
+        background-color: #f2f2f2;
+        color: #555;
+      }
+      tr:hover {
+        background-color: #f9f9f9;
+      }
+      .loading {
+        text-align: center;
+        color: #888;
+      }
+      .error {
+        color: red;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>키움증권 거래량상위</h1>
+      <div id="timestamp"></div>
+      <div id="output"></div>
+    </div>
+
+    <script>
+      const accessParams = {
+        grant_type: "client_credentials",
+        appkey: "oJ5S3eaEUVsSaxPX7vkiOPjOI9_yvkFGm3lwAkd_fAg",
+        secretkey: "lA1nom_3Ql1TX1rUpppvwhRJBuEQ44cECAYn7lCGgps",
+      };
+
+      const KospiQuantity = {
+        mrkt_tp: "001", //000:전체, 001:코스피, 101:코스닥
+        sort_tp: "1", //1:거래량, 2:거래회전율, 3:거래대금
+        mang_stk_incls: "16", //0:관리종목 포함, 1:관리종목 미포함, 3:우선주제외, 11:정리매매종목제외, 4:관리종목, 우선주제외, 5:증100제외, 6:증100마나보기, 13:증60만보기, 12:증50만보기, 7:증40만보기, 8:증30만보기, 9:증20만보기, 14:ETF제외, 15:스팩제외, 16:ETF+ETN제외
+        crd_tp: "0", //0:전체조회, 9:신용융자전체, 1:신용융자A군, 2:신용융자B군, 3:신용융자C군, 4:신용융자D군, 8:신용대주
+        trde_qty_tp: "0", //0:전체조회, 5:5천주이상, 10:1만주이상, 50:5만주이상, 100:10만주이상, 200:20만주이상, 300:30만주이상, 500:500만주이상, 1000:백만주이상
+        pric_tp: "0", //0:전체조회, 1:1천원미만, 2:1천원이상, 3:1천원~2천원, 4:2천원~5천원, 5:5천원이상, 6:5천원~1만원, 10:1만원미만, 7:1만원이상, 8:5만원이상, 9:10만원이상
+        trde_prica_tp: "0", //0:전체조회, 1:1천만원이상, 3:3천만원이상, 4:5천만원이상, 10:1억원이상, 30:3억원이상, 50:5억원이상, 100:10억원이상, 300:30억원이상, 500:50억원이상, 1000:100억원이상, 3000:300억원이상, 5000:500억원이상
+        mrkt_open_tp: "0", //0:전체조회, 1:장중, 2:장전시간외, 3:장후시간외
+        stex_tp: "1", //1:KRX, 2:NXT 3.통합
+      };
+
+      const KosdaqQuantity = {
+        mrkt_tp: "101", //000:전체, 001:코스피, 101:코스닥
+        sort_tp: "1", //1:거래량, 2:거래회전율, 3:거래대금
+        mang_stk_incls: "16", //0:관리종목 포함, 1:관리종목 미포함, 3:우선주제외, 11:정리매매종목제외, 4:관리종목, 우선주제외, 5:증100제외, 6:증100마나보기, 13:증60만보기, 12:증50만보기, 7:증40만보기, 8:증30만보기, 9:증20만보기, 14:ETF제외, 15:스팩제외, 16:ETF+ETN제외
+        crd_tp: "0", //0:전체조회, 9:신용융자전체, 1:신용융자A군, 2:신용융자B군, 3:신용융자C군, 4:신용융자D군, 8:신용대주
+        trde_qty_tp: "0", //0:전체조회, 5:5천주이상, 10:1만주이상, 50:5만주이상, 100:10만주이상, 200:20만주이상, 300:30만주이상, 500:500만주이상, 1000:백만주이상
+        pric_tp: "0", //0:전체조회, 1:1천원미만, 2:1천원이상, 3:1천원~2천원, 4:2천원~5천원, 5:5천원이상, 6:5천원~1만원, 10:1만원미만, 7:1만원이상, 8:5만원이상, 9:10만원이상
+        trde_prica_tp: "0", //0:전체조회, 1:1천만원이상, 3:3천만원이상, 4:5천만원이상, 10:1억원이상, 30:3억원이상, 50:5억원이상, 100:10억원이상, 300:30억원이상, 500:50억원이상, 1000:100억원이상, 3000:300억원이상, 5000:500억원이상
+        mrkt_open_tp: "0", //0:전체조회, 1:장중, 2:장전시간외, 3:장후시간외
+        stex_tp: "1", //1:KRX, 2:NXT 3.통합
+      };
+
+      async function fetchToken() {
+        const url = "https://mockapi.kiwoom.com/oauth2/token";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json;charset=UTF-8" },
+          body: JSON.stringify(accessParams),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        return data.token;
+      }
+
+      async function fetchKospiQuantity(token) {
+        const url = "https://mockapi.kiwoom.com/api/dostk/rkinfo";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            authorization: `Bearer ${token}`,
+            "api-id": "ka10030",
+            "cont-yn": "Y",
+            "next-key": "",
+          },
+          body: JSON.stringify(KospiQuantity),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        const rawGroupData = data.tdy_trde_qty_upper || [];
+
+        const formattedData = rawGroupData.map((item) => ({
+          stk_cd: item.stk_cd.replace(/[^0-9]/g, ""),
+          stk_nm: item.stk_nm,
+          cur_prc: Math.abs(item.cur_prc),
+          flu_rt: parseFloat(item.flu_rt).toFixed(2),
+          trde_qty: item.trde_qty,
+        }));
+
+        return formattedData;
+      }
+
+      async function fetchKosdaqQuantity(token) {
+        const url = "https://mockapi.kiwoom.com/api/dostk/rkinfo";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            authorization: `Bearer ${token}`,
+            "api-id": "ka10030",
+            "cont-yn": "N",
+            "next-key": "",
+          },
+          body: JSON.stringify(KosdaqQuantity),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        const rawGroupData = data.tdy_trde_qty_upper || [];
+
+        const formattedData = rawGroupData.map((item) => ({
+          stk_cd: item.stk_cd.replace(/[^0-9]/g, ""),
+          stk_nm: item.stk_nm,
+          cur_prc: Math.abs(item.cur_prc),
+          flu_rt: parseFloat(item.flu_rt).toFixed(2),
+          trde_qty: item.trde_qty,
+        }));
+
+        return formattedData;
+      }
+
+      function renderTable(dataList) {
+        const table = document.createElement("table");
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>종목코드</th>
+              <th>종목명</th>
+              <th>현재가</th>
+              <th>등락률</th>
+              <th>거래량</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${dataList
+              .map(
+                (item) => `
+              <tr>
+                <td>${item.stk_cd}</td>
+                <td>${item.stk_nm}</td>
+                <td>${item.cur_prc}</td>
+                <td>${item.flu_rt}</td>
+                <td>${item.trde_qty}</td>
+              </tr>
+            `
+              )
+              .join("")}
+          </tbody>
+        `;
+        document.getElementById("output").innerHTML = "";
+        document.getElementById("output").appendChild(table);
+      }
+
+      function delay(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
+      function updateTimestamp(message = "") {
+        const now = new Date();
+        document.getElementById(
+          "timestamp"
+        ).innerText = `${message} 최종 업데이트: ${now.toLocaleTimeString()}`;
+      }
+
+      async function updateData() {
+        try {
+          updateTimestamp("업데이트 중... ");
+          const token = await fetchToken();
+          const mergedDataMap = new Map();
+
+          // Fetch KospiQuantity data
+          const KospiQuantityData = await fetchKospiQuantity(
+            token,
+            KospiQuantity
+          );
+          KospiQuantityData.forEach((item) => {
+            if (!mergedDataMap.has(item.stk_cd)) {
+              mergedDataMap.set(item.stk_cd, {
+                stk_cd: item.stk_cd,
+                stk_nm: item.stk_nm,
+                cur_prc: item.cur_prc,
+                flu_rt: parseFloat(item.flu_rt).toFixed(2),
+                trde_qty: item.trde_qty,
+              });
+            }
+            const existingItem = mergedDataMap.get(item.stk_cd);
+          });
+          await delay(2000);
+
+          // Fetch KosdaqQuantity data
+          const KosdaqQuantityData = await fetchKosdaqQuantity(
+            token,
+            KosdaqQuantity
+          );
+          KosdaqQuantityData.forEach((item) => {
+            if (!mergedDataMap.has(item.stk_cd)) {
+              mergedDataMap.set(item.stk_cd, {
+                stk_cd: item.stk_cd,
+                stk_nm: item.stk_nm,
+                cur_prc: item.cur_prc,
+                flu_rt: parseFloat(item.flu_rt).toFixed(2),
+                trde_qty: item.trde_qty,
+              });
+            }
+            const existingItem = mergedDataMap.get(item.stk_cd);
+          });
+
+          const finalData = Array.from(mergedDataMap.values());
+          renderTable(finalData);
+          updateTimestamp();
+        } catch (e) {
+          console.error("Error during updateData:", e);
+          document.getElementById(
+            "output"
+          ).innerHTML = `<div class="error">데이터 로딩 중 에러가 발생했습니다: ${e.message}</div>`;
+        }
+      }
+
+      updateData();
+      setInterval(updateData, 10000); // 10초마다 업데이트
+    </script>
+  </body>
+</html>
