@@ -70,10 +70,16 @@
         secretkey: "lA1nom_3Ql1TX1rUpppvwhRJBuEQ44cECAYn7lCGgps",
       };
 
-      const chartParams = {
-        mrkt_tp: "000", //000:전체, 001:코스피, 101:코스닥
+      const amountKospi = {
+        mrkt_tp: "001", //000:전체, 001:코스피, 101:코스닥
         mang_stk_incls: "1", //0:관리종목 미포함, 1:관리종목 포함
-        stex_tp: "2", //1:KRX, 2:NXT 3.통합
+        stex_tp: "3", //1:KRX, 2:NXT 3.통합
+      };
+
+      const amountKosdaq = {
+        mrkt_tp: "101", //000:전체, 001:코스피, 101:코스닥
+        mang_stk_incls: "1", //0:관리종목 미포함, 1:관리종목 포함
+        stex_tp: "3", //1:KRX, 2:NXT 3.통합
       };
 
       async function fetchToken() {
@@ -90,7 +96,7 @@
         return data.token;
       }
 
-      async function fetchTradePricaRanking(token) {
+      async function fetchPricaKospi(token) {
         const url = "https://mockapi.kiwoom.com/api/dostk/rkinfo";
         const res = await fetch(url, {
           method: "POST",
@@ -101,13 +107,45 @@
             "cont-yn": "N",
             "next-key": "",
           },
-          body: JSON.stringify(chartParams),
+          body: JSON.stringify(amountKospi),
         });
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
         const data = await res.json();
-        return data.trde_prica_upper || [];
+        return (data.trde_prica_upper || []).map((item) => ({
+          stk_cd: item.stk_cd.replace(/^A|_AL$/, ""),
+          stk_nm: item.stk_nm,
+          cur_prc: Math.abs(parseInt(item.cur_prc)),
+          flu_rt: parseFloat(item.flu_rt),
+          trde_prica: parseInt(item.trde_prica),
+        }));
+      }
+
+      async function fetchPricaKosdaq(token) {
+        const url = "https://mockapi.kiwoom.com/api/dostk/rkinfo";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            authorization: `Bearer ${token}`,
+            "api-id": "ka10032",
+            "cont-yn": "N",
+            "next-key": "",
+          },
+          body: JSON.stringify(amountKosdaq),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        return (data.trde_prica_upper || []).map((item) => ({
+          stk_cd: item.stk_cd.replace(/^A|_AL$/, ""),
+          stk_nm: item.stk_nm,
+          cur_prc: Math.abs(parseInt(item.cur_prc)),
+          flu_rt: parseFloat(item.flu_rt),
+          trde_prica: parseInt(item.trde_prica),
+        }));
       }
 
       function renderTable(dataList) {
@@ -115,7 +153,7 @@
         table.innerHTML = `
           <thead>
             <tr>
-              <th>순위</th>
+              <th>종목코드</th>
               <th>종목명</th>
               <th>현재가</th>
               <th>등락률</th>
@@ -127,10 +165,10 @@
               .map(
                 (item) => `
               <tr>
-                <td>${item.now_rank}</td>
-                <td>${item.stk_nm} (${item.stk_cd})</td>
+                <td>${item.stk_cd}</td>
+                <td>${item.stk_nm}</td>
                 <td>${item.cur_prc}</td>
-                <td>${item.flu_rt} %</td>
+                <td>${item.flu_rt}</td>
                 <td>${item.trde_prica}</td>
               </tr>
             `
@@ -149,22 +187,49 @@
         ).innerText = `최종 업데이트: ${now.toLocaleTimeString()}`;
       }
 
+      function delay(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
       async function updateData() {
         try {
-          document.getElementById(
-            "output"
-          ).innerHTML = `<div class="loading">데이터 불러오는 중...</div>`;
+          updateTimestamp("업데이트 중... ");
           const token = await fetchToken();
-          const tradePricaData = await fetchTradePricaRanking(token);
+          const mergedDataMap = new Map();
 
-          if (!tradePricaData || tradePricaData.length === 0) {
-            document.getElementById(
-              "output"
-            ).innerHTML = `<div class="error">API에서 데이터를 가져오지 못했습니다. Mock API 응답을 확인해주세요.</div>`;
-            return;
-          }
+          // Fetch PricaKosdaq data
+          const PricaKospiData = await fetchPricaKospi(token, amountKospi);
+          PricaKospiData.forEach((item) => {
+            if (!mergedDataMap.has(item.stk_cd)) {
+              mergedDataMap.set(item.stk_cd, {
+                stk_cd: item.stk_cd,
+                stk_nm: item.stk_nm,
+                cur_prc: item.cur_prc,
+                flu_rt: parseFloat(item.flu_rt).toFixed(2),
+                trde_prica: item.trde_prica,
+              });
+            }
+            const existingItem = mergedDataMap.get(item.stk_cd);
+          });
+          await delay(2000);
 
-          renderTable(tradePricaData);
+          // Fetch PricaKosdaq data
+          const PricaKosdaqData = await fetchPricaKosdaq(token, amountKosdaq);
+          PricaKosdaqData.forEach((item) => {
+            if (!mergedDataMap.has(item.stk_cd)) {
+              mergedDataMap.set(item.stk_cd, {
+                stk_cd: item.stk_cd,
+                stk_nm: item.stk_nm,
+                cur_prc: item.cur_prc,
+                flu_rt: parseFloat(item.flu_rt).toFixed(2),
+                trde_prica: item.trde_prica,
+              });
+            }
+            const existingItem = mergedDataMap.get(item.stk_cd);
+          });
+
+          const finalData = Array.from(mergedDataMap.values());
+          renderTable(finalData);
           updateTimestamp();
         } catch (e) {
           console.error("Error during updateData:", e);

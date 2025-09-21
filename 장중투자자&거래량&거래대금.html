@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Kiwoom 장중투자자별매매상위요청</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+      .container {
+        max-width: 800px;
+        margin: auto;
+        background: white;
+        /* padding: 20px; */
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        text-align: center;
+        color: #333;
+      }
+      #timestamp {
+        text-align: right;
+        font-size: 0.9em;
+        color: #777;
+        margin-bottom: 20px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        font-size: 0.9em;
+      }
+      th,
+      td {
+        /* padding: 12px; */
+        text-align: right;
+        border-bottom: 1px solid #ddd;
+      }
+      th {
+        background-color: #f2f2f2;
+        color: #555;
+      }
+      tr:hover {
+        background-color: #f9f9f9;
+      }
+      .loading {
+        text-align: center;
+        color: #888;
+      }
+      .error {
+        color: red;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- <h1>장중투자자별매매상위</h1> -->
+      <div id="timestamp"></div>
+      <div id="output"></div>
+    </div>
+
+    <script>
+      const accessParams = {
+        grant_type: "client_credentials",
+        appkey: "oJ5S3eaEUVsSaxPX7vkiOPjOI9_yvkFGm3lwAkd_fAg",
+        secretkey: "lA1nom_3Ql1TX1rUpppvwhRJBuEQ44cECAYn7lCGgps",
+      };
+
+      const amountKospi = {
+        mrkt_tp: "001",
+        mang_stk_incls: "1",
+        stex_tp: "3",
+      };
+
+      const amountKosdaq = {
+        mrkt_tp: "101",
+        mang_stk_incls: "1",
+        stex_tp: "3",
+      };
+
+      const KospiQuantity = {
+        mrkt_tp: "001",
+        sort_tp: "1",
+        mang_stk_incls: "16",
+        crd_tp: "0",
+        trde_qty_tp: "0",
+        pric_tp: "0",
+        trde_prica_tp: "0",
+        mrkt_open_tp: "0",
+        stex_tp: "1",
+      };
+
+      const KosdaqQuantity = {
+        mrkt_tp: "101",
+        sort_tp: "1",
+        mang_stk_incls: "16",
+        crd_tp: "0",
+        trde_qty_tp: "0",
+        pric_tp: "0",
+        trde_prica_tp: "0",
+        mrkt_open_tp: "0",
+        stex_tp: "1",
+      };
+
+      const ForKospiBuy = {
+        trde_tp: "1",
+        mrkt_tp: "001",
+        orgn_tp: "9000",
+      };
+
+      const ForKosdaqBuy = {
+        trde_tp: "1",
+        mrkt_tp: "101",
+        orgn_tp: "9000",
+      };
+
+      const OrgKospiBuy = {
+        trde_tp: "1",
+        mrkt_tp: "001",
+        orgn_tp: "9999",
+      };
+
+      const OrgKosdaqBuy = {
+        trde_tp: "1",
+        mrkt_tp: "101",
+        orgn_tp: "9999",
+      };
+
+      const ForKospiSell = {
+        trde_tp: "2",
+        mrkt_tp: "001",
+        orgn_tp: "9000",
+      };
+
+      const ForKosdaqSell = {
+        trde_tp: "2",
+        mrkt_tp: "101",
+        orgn_tp: "9000",
+      };
+
+      const OrgKospiSell = {
+        trde_tp: "2",
+        mrkt_tp: "001",
+        orgn_tp: "9999",
+      };
+
+      const OrgKosdaqSell = {
+        trde_tp: "2",
+        mrkt_tp: "101",
+        orgn_tp: "9999",
+      };
+
+      async function fetchToken() {
+        const url = "https://mockapi.kiwoom.com/oauth2/token";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json;charset=UTF-8" },
+          body: JSON.stringify(accessParams),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        return data.token;
+      }
+
+      function delay(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
+      async function fetchPricaKospi(token) {
+        const url = "https://mockapi.kiwoom.com/api/dostk/rkinfo";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            authorization: `Bearer ${token}`,
+            "api-id": "ka10032",
+            "cont-yn": "N",
+            "next-key": "",
+          },
+          body: JSON.stringify(amountKospi),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        return (data.trde_prica_upper || []).map((item) => ({
+          stk_cd: item.stk_cd.replace(/^A|_AL$/, ""),
+          stk_nm: item.stk_nm,
+          cur_prc: Math.abs(parseInt(item.cur_prc)),
+          flu_rt: parseFloat(item.flu_rt),
+          trde_qty: parseInt(item.now_trde_qty),
+        }));
+      }
+
+      async function fetchPricaKosdaq(token) {
+        const url = "https://mockapi.kiwoom.com/api/dostk/rkinfo";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            authorization: `Bearer ${token}`,
+            "api-id": "ka10032",
+            "cont-yn": "N",
+            "next-key": "",
+          },
+          body: JSON.stringify(amountKosdaq),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        return (data.trde_prica_upper || []).map((item) => ({
+          stk_cd: item.stk_cd.replace(/^A|_AL$/, ""),
+          stk_nm: item.stk_nm,
+          cur_prc: Math.abs(parseInt(item.cur_prc)),
+          flu_rt: parseFloat(item.flu_rt),
+          trde_qty: parseInt(item.now_trde_qty),
+        }));
+      }
+
+      async function fetchKospiQuantity(token) {
+        const url = "https://mockapi.kiwoom.com/api/dostk/rkinfo";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            authorization: `Bearer ${token}`,
+            "api-id": "ka10030",
+            "cont-yn": "Y",
+            "next-key": "",
+          },
+          body: JSON.stringify(KospiQuantity),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        const rawGroupData = data.tdy_trde_qty_upper || [];
+
+        const formattedData = rawGroupData.map((item) => ({
+          stk_cd: item.stk_cd.replace(/[^0-9]/g, ""),
+          stk_nm: item.stk_nm,
+          cur_prc: Math.abs(item.cur_prc),
+          flu_rt: parseFloat(item.flu_rt).toFixed(2),
+          trde_qty: item.trde_qty,
+        }));
+
+        return formattedData;
+      }
+
+      async function fetchKosdaqQuantity(token) {
+        const url = "https://mockapi.kiwoom.com/api/dostk/rkinfo";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            authorization: `Bearer ${token}`,
+            "api-id": "ka10030",
+            "cont-yn": "N",
+            "next-key": "",
+          },
+          body: JSON.stringify(KosdaqQuantity),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        const rawGroupData = data.tdy_trde_qty_upper || [];
+
+        const formattedData = rawGroupData.map((item) => ({
+          stk_cd: item.stk_cd.replace(/[^0-9]/g, ""),
+          stk_nm: item.stk_nm,
+          cur_prc: Math.abs(item.cur_prc),
+          flu_rt: parseFloat(item.flu_rt).toFixed(2),
+          trde_qty: item.trde_qty,
+        }));
+
+        return formattedData;
+      }
+
+      async function fetchInvestorData(token, params) {
+        const url = "https://mockapi.kiwoom.com/api/dostk/rkinfo";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            authorization: `Bearer ${token}`,
+            "api-id": "ka10065",
+            "cont-yn": "N",
+            "next-key": "",
+          },
+          body: JSON.stringify(params),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        return data.opmr_invsr_trde_upper || [];
+      }
+
+      function renderTable(dataList) {
+        const table = document.createElement("table");
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>종목명</th>
+              <th>현재가</th>
+              <th>등락률</th>
+              <th>거래량</th>
+              <th>양매수대금(억)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${dataList
+              .map((item) => {
+                const fluRt = parseFloat(item.flu_rt);
+                const formattedFluRt = !isNaN(fluRt) ? fluRt.toFixed(2) : "";
+
+                const ForNetBuy = parseInt(item.ForNetBuy) || 0;
+                const ForNetSell = parseInt(item.ForNetSell) || 0;
+                const OrgNetBuy = parseInt(item.OrgNetBuy) || 0;
+                const OrgNetSell = parseInt(item.OrgNetSell) || 0;
+
+                return `
+              <tr>
+                <td>${item.stk_nm}</td>
+                <td>${item.cur_prc !== undefined ? item.cur_prc : ""}</td>
+                <td>${formattedFluRt}</td>
+                <td>${item.trde_qty !== undefined ? item.trde_qty : ""}</td>
+                <td>${(item.amount / 100000000).toFixed()}</td>
+              </tr>
+              `;
+              })
+              .join("")}
+          </tbody>
+        `;
+        document.getElementById("output").innerHTML = "";
+        document.getElementById("output").appendChild(table);
+      }
+
+      function updateTimestamp(message = "") {
+        const now = new Date();
+        document.getElementById(
+          "timestamp"
+        ).innerText = `${message} 최종 업데이트: ${now.toLocaleTimeString()}`;
+      }
+
+      async function updateData() {
+        try {
+          updateTimestamp("업데이트 중... ");
+          const token = await fetchToken();
+          const mergedDataMap = new Map();
+
+          // 투자자별 매매 데이터
+          const invBuyData = await fetchInvestorData(token, ForKospiBuy);
+          invBuyData.forEach((item) => {
+            const stkCd = item.stk_cd.replace(/[^0-9]/g, "");
+            if (!mergedDataMap.has(stkCd)) {
+              mergedDataMap.set(stkCd, { stk_cd: stkCd, stk_nm: item.stk_nm });
+            }
+            mergedDataMap.get(stkCd).ForNetBuy = parseInt(item.netslmt);
+          });
+          await delay(2000);
+
+          const invSellData = await fetchInvestorData(token, ForKospiSell);
+          invSellData.forEach((item) => {
+            const stkCd = item.stk_cd.replace(/[^0-9]/g, "");
+            if (!mergedDataMap.has(stkCd)) {
+              mergedDataMap.set(stkCd, { stk_cd: stkCd, stk_nm: item.stk_nm });
+            }
+            mergedDataMap.get(stkCd).ForNetSell = parseInt(item.netslmt);
+          });
+          await delay(2000);
+
+          const orgBuyData = await fetchInvestorData(token, OrgKospiBuy);
+          orgBuyData.forEach((item) => {
+            const stkCd = item.stk_cd.replace(/[^0-9]/g, "");
+            if (!mergedDataMap.has(stkCd)) {
+              mergedDataMap.set(stkCd, { stk_cd: stkCd, stk_nm: item.stk_nm });
+            }
+            mergedDataMap.get(stkCd).OrgNetBuy = parseInt(item.netslmt);
+          });
+          await delay(2000);
+
+          const orgSellData = await fetchInvestorData(token, OrgKospiSell);
+          orgSellData.forEach((item) => {
+            const stkCd = item.stk_cd.replace(/[^0-9]/g, "");
+            if (!mergedDataMap.has(stkCd)) {
+              mergedDataMap.set(stkCd, { stk_cd: stkCd, stk_nm: item.stk_nm });
+            }
+            mergedDataMap.get(stkCd).OrgNetSell = parseInt(item.netslmt);
+          });
+          await delay(2000);
+
+          // 기타 데이터
+          const pricaKospiData = await fetchPricaKospi(token);
+          pricaKospiData.forEach((item) => {
+            const existingItem = mergedDataMap.get(item.stk_cd);
+            if (existingItem) {
+              Object.assign(existingItem, {
+                cur_prc: item.cur_prc,
+                flu_rt: item.flu_rt,
+              });
+            } else {
+              mergedDataMap.set(item.stk_cd, item);
+            }
+          });
+          await delay(2000);
+
+          const pricaKosdaqData = await fetchPricaKosdaq(token);
+          pricaKosdaqData.forEach((item) => {
+            const existingItem = mergedDataMap.get(item.stk_cd);
+            if (existingItem) {
+              Object.assign(existingItem, {
+                cur_prc: item.cur_prc,
+                flu_rt: item.flu_rt,
+              });
+            } else {
+              mergedDataMap.set(item.stk_cd, item);
+            }
+          });
+          await delay(2000);
+
+          const quantityKospiData = await fetchKospiQuantity(token);
+          quantityKospiData.forEach((item) => {
+            const existingItem = mergedDataMap.get(item.stk_cd);
+            if (existingItem) {
+              Object.assign(existingItem, {
+                cur_prc: item.cur_prc,
+                flu_rt: item.flu_rt,
+                trde_qty: item.trde_qty,
+              });
+            } else {
+              mergedDataMap.set(item.stk_cd, item);
+            }
+          });
+          await delay(2000);
+
+          const quantityKosdaqData = await fetchKosdaqQuantity(token);
+          quantityKosdaqData.forEach((item) => {
+            const existingItem = mergedDataMap.get(item.stk_cd);
+            if (existingItem) {
+              Object.assign(existingItem, {
+                cur_prc: item.cur_prc,
+                flu_rt: item.flu_rt,
+                trde_qty: item.trde_qty,
+              });
+            } else {
+              mergedDataMap.set(item.stk_cd, item);
+            }
+          });
+
+          // 최종 데이터 계산 및 정렬
+          const finalData = Array.from(mergedDataMap.values()).map((item) => {
+            const ForNetBuy = parseInt(item.ForNetBuy) || 0;
+            const ForNetSell = parseInt(item.ForNetSell) || 0;
+            const OrgNetBuy = parseInt(item.OrgNetBuy) || 0;
+            const OrgNetSell = parseInt(item.OrgNetSell) || 0;
+            const totalNetSum =
+              ForNetBuy + ForNetSell + (OrgNetBuy + OrgNetSell);
+            const amount =
+              item.cur_prc !== undefined ? item.cur_prc * totalNetSum : 0;
+            return { ...item, totalNetSum: totalNetSum, amount: amount };
+          });
+
+          // 양매수대금(amount)을 기준으로 내림차순 정렬
+          finalData.sort((a, b) => b.amount - a.amount);
+
+          renderTable(finalData);
+          updateTimestamp();
+        } catch (e) {
+          console.error("Error during updateData:", e);
+          document.getElementById(
+            "output"
+          ).innerHTML = `<div class="error">데이터 로딩 중 에러가 발생했습니다: ${e.message}</div>`;
+        }
+      }
+
+      updateData();
+      setInterval(updateData, 300000);
+    </script>
+  </body>
+</html>
