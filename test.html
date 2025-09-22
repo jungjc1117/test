@@ -592,7 +592,7 @@
               <td>${item.stk_nm}</td>
               <td>${item.cur_prc !== undefined ? item.cur_prc : ""}</td>
               <td>${formattedFluRt}</td>
-              <td>${item.prica !== undefined ? item.prica : ""}</td>
+              <td>${item.prica !== undefined ? item.prica.toFixed() : ""}</td>
               <td>${programAmount}</td>
               <td>${orgAmount}</td>
               <td>${marketCap}</td>
