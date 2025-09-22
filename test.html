@@ -58,12 +58,17 @@
   </head>
   <body>
     <div class="container">
-      <!-- <h1>장중투자자별매매상위</h1> -->
       <div id="timestamp"></div>
       <div id="output"></div>
     </div>
 
     <script>
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, "0");
+      const day = String(today.getDate()).padStart(2, "0");
+      const formattedDate = `${year}${month}${day}`;
+
       const accessParams = {
         grant_type: "client_credentials",
         appkey: "oJ5S3eaEUVsSaxPX7vkiOPjOI9_yvkFGm3lwAkd_fAg",
@@ -84,38 +89,38 @@
 
       const KospiQuantity = {
         mrkt_tp: "001",
-        sort_tp: "1",
+        sort_tp: "3",
         mang_stk_incls: "16",
         crd_tp: "0",
         trde_qty_tp: "0",
         pric_tp: "0",
         trde_prica_tp: "0",
         mrkt_open_tp: "0",
-        stex_tp: "1",
+        stex_tp: "3",
       };
 
       const KosdaqQuantity = {
         mrkt_tp: "101",
-        sort_tp: "1",
+        sort_tp: "3",
         mang_stk_incls: "16",
         crd_tp: "0",
         trde_qty_tp: "0",
         pric_tp: "0",
         trde_prica_tp: "0",
         mrkt_open_tp: "0",
-        stex_tp: "1",
+        stex_tp: "3",
       };
 
-      const ForKospiBuy = {
-        trde_tp: "1",
-        mrkt_tp: "001",
-        orgn_tp: "9000",
+      const KospiProgram = {
+        dt: formattedDate, //YYYYMMDD
+        mrkt_tp: "P00101", //P00101:코스피, P10102:코스닥
+        stex_tp: "3", // 1:KRX, 2:NXT 3.통합
       };
 
-      const ForKosdaqBuy = {
-        trde_tp: "1",
-        mrkt_tp: "101",
-        orgn_tp: "9000",
+      const KosdaqProgram = {
+        dt: formattedDate, //YYYYMMDD
+        mrkt_tp: "P10102", //P00101:코스피, P10102:코스닥
+        stex_tp: "3", //1:KRX, 2:NXT 3.통합
       };
 
       const OrgKospiBuy = {
@@ -128,18 +133,6 @@
         trde_tp: "1",
         mrkt_tp: "101",
         orgn_tp: "9999",
-      };
-
-      const ForKospiSell = {
-        trde_tp: "2",
-        mrkt_tp: "001",
-        orgn_tp: "9000",
-      };
-
-      const ForKosdaqSell = {
-        trde_tp: "2",
-        mrkt_tp: "101",
-        orgn_tp: "9000",
       };
 
       const OrgKospiSell = {
@@ -304,44 +297,46 @@
         return data.opmr_invsr_trde_upper || [];
       }
 
-      function renderTable(dataList) {
-        const table = document.createElement("table");
-        table.innerHTML = `
-          <thead>
-            <tr>
-              <th>종목명</th>
-              <th>현재가</th>
-              <th>등락률</th>
-              <th>거래량</th>
-              <th>양매수대금(억)</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${dataList
-              .map((item) => {
-                const fluRt = parseFloat(item.flu_rt);
-                const formattedFluRt = !isNaN(fluRt) ? fluRt.toFixed(2) : "";
+      async function fetchProgram(token, params) {
+        const url = "https://mockapi.kiwoom.com/api/dostk/stkinfo";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            authorization: `Bearer ${token}`,
+            "api-id": "ka90004",
+            "cont-yn": "Y",
+            "next-key": "",
+          },
+          body: JSON.stringify(params),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        const rawGroupData = data.stk_prm_trde_prst || [];
 
-                const ForNetBuy = parseInt(item.ForNetBuy) || 0;
-                const ForNetSell = parseInt(item.ForNetSell) || 0;
-                const OrgNetBuy = parseInt(item.OrgNetBuy) || 0;
-                const OrgNetSell = parseInt(item.OrgNetSell) || 0;
+        const formattedData = rawGroupData.map((item) => ({
+          stk_cd: item.stk_cd.replace(/[^0-9]/g, ""),
+          stk_nm: item.stk_nm,
+          cur_prc: Math.abs(item.cur_prc),
+          netprps_prica: parseFloat(item.netprps_prica).toFixed(),
+        }));
 
-                return `
-              <tr>
-                <td>${item.stk_nm}</td>
-                <td>${item.cur_prc !== undefined ? item.cur_prc : ""}</td>
-                <td>${formattedFluRt}</td>
-                <td>${item.trde_qty !== undefined ? item.trde_qty : ""}</td>
-                <td>${(item.amount / 100000000).toFixed()}</td>
-              </tr>
-              `;
-              })
-              .join("")}
-          </tbody>
-        `;
-        document.getElementById("output").innerHTML = "";
-        document.getElementById("output").appendChild(table);
+        return formattedData;
+      }
+
+      // New function to fetch outstanding shares data
+      async function fetchOutstandingShares() {
+        const url = "data.json";
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error(
+            `Failed to fetch outstanding shares data: ${res.status}`
+          );
+        }
+        const data = await res.json();
+        return data;
       }
 
       function updateTimestamp(message = "") {
@@ -357,48 +352,111 @@
           const token = await fetchToken();
           const mergedDataMap = new Map();
 
+          // Fetch outstanding shares data first
+          const outstandingSharesData = await fetchOutstandingShares();
+          outstandingSharesData.forEach((item) => {
+            const stkCd = item.종목코드;
+            mergedDataMap.set(stkCd, {
+              stk_cd: stkCd,
+              stk_nm: "", // Name will be filled later
+              outstandingShares: parseInt(item.주식수),
+            });
+          });
+
+          // 프로그램 순매수 데이터
+          const programKospiData = await fetchProgram(token, KospiProgram);
+          programKospiData.forEach((item) => {
+            const stkCd = item.stk_cd.replace(/[^0-9]/g, "");
+            if (!mergedDataMap.has(stkCd)) {
+              mergedDataMap.set(stkCd, {
+                stk_cd: stkCd,
+                stk_nm: item.stk_nm,
+              });
+            }
+            mergedDataMap.get(stkCd).stk_nm = item.stk_nm;
+            mergedDataMap.get(stkCd).Program = parseInt(item.netprps_prica);
+          });
+          await delay(2000);
+
+          const programKosdaqData = await fetchProgram(token, KosdaqProgram);
+          programKosdaqData.forEach((item) => {
+            const stkCd = item.stk_cd.replace(/[^0-9]/g, "");
+            if (!mergedDataMap.has(stkCd)) {
+              mergedDataMap.set(stkCd, {
+                stk_cd: stkCd,
+                stk_nm: item.stk_nm,
+              });
+            }
+            mergedDataMap.get(stkCd).stk_nm = item.stk_nm;
+            mergedDataMap.get(stkCd).Program = parseInt(item.netprps_prica);
+          });
+          await delay(2000);
+
           // 투자자별 매매 데이터
-          const invBuyData = await fetchInvestorData(token, ForKospiBuy);
-          invBuyData.forEach((item) => {
+          const orgBuyKospiData = await fetchInvestorData(token, OrgKospiBuy);
+          orgBuyKospiData.forEach((item) => {
             const stkCd = item.stk_cd.replace(/[^0-9]/g, "");
             if (!mergedDataMap.has(stkCd)) {
-              mergedDataMap.set(stkCd, { stk_cd: stkCd, stk_nm: item.stk_nm });
+              mergedDataMap.set(stkCd, {
+                stk_cd: stkCd,
+                stk_nm: item.stk_nm,
+              });
             }
-            mergedDataMap.get(stkCd).ForNetBuy = parseInt(item.netslmt);
-          });
-          await delay(2000);
-
-          const invSellData = await fetchInvestorData(token, ForKospiSell);
-          invSellData.forEach((item) => {
-            const stkCd = item.stk_cd.replace(/[^0-9]/g, "");
-            if (!mergedDataMap.has(stkCd)) {
-              mergedDataMap.set(stkCd, { stk_cd: stkCd, stk_nm: item.stk_nm });
-            }
-            mergedDataMap.get(stkCd).ForNetSell = parseInt(item.netslmt);
-          });
-          await delay(2000);
-
-          const orgBuyData = await fetchInvestorData(token, OrgKospiBuy);
-          orgBuyData.forEach((item) => {
-            const stkCd = item.stk_cd.replace(/[^0-9]/g, "");
-            if (!mergedDataMap.has(stkCd)) {
-              mergedDataMap.set(stkCd, { stk_cd: stkCd, stk_nm: item.stk_nm });
-            }
+            mergedDataMap.get(stkCd).stk_nm = item.stk_nm;
             mergedDataMap.get(stkCd).OrgNetBuy = parseInt(item.netslmt);
           });
           await delay(2000);
 
-          const orgSellData = await fetchInvestorData(token, OrgKospiSell);
-          orgSellData.forEach((item) => {
+          const orgSellKospiData = await fetchInvestorData(token, OrgKospiSell);
+          orgSellKospiData.forEach((item) => {
             const stkCd = item.stk_cd.replace(/[^0-9]/g, "");
             if (!mergedDataMap.has(stkCd)) {
-              mergedDataMap.set(stkCd, { stk_cd: stkCd, stk_nm: item.stk_nm });
+              mergedDataMap.set(stkCd, {
+                stk_cd: stkCd,
+                stk_nm: item.stk_nm,
+              });
             }
+            mergedDataMap.get(stkCd).stk_nm = item.stk_nm;
             mergedDataMap.get(stkCd).OrgNetSell = parseInt(item.netslmt);
           });
           await delay(2000);
 
-          // 기타 데이터
+          const orgBuyKosdaqData = await fetchInvestorData(token, OrgKosdaqBuy);
+          orgBuyKosdaqData.forEach((item) => {
+            const stkCd = item.stk_cd.replace(/[^0-9]/g, "");
+            if (!mergedDataMap.has(stkCd)) {
+              mergedDataMap.set(stkCd, {
+                stk_cd: stkCd,
+                stk_nm: item.stk_nm,
+              });
+            }
+            mergedDataMap.get(stkCd).stk_nm = item.stk_nm;
+            const currentBuy = mergedDataMap.get(stkCd).OrgNetBuy || 0;
+            mergedDataMap.get(stkCd).OrgNetBuy =
+              currentBuy + parseInt(item.netslmt);
+          });
+          await delay(2000);
+
+          const orgSellKosdaqData = await fetchInvestorData(
+            token,
+            OrgKosdaqSell
+          );
+          orgSellKosdaqData.forEach((item) => {
+            const stkCd = item.stk_cd.replace(/[^0-9]/g, "");
+            if (!mergedDataMap.has(stkCd)) {
+              mergedDataMap.set(stkCd, {
+                stk_cd: stkCd,
+                stk_nm: item.stk_nm,
+              });
+            }
+            mergedDataMap.get(stkCd).stk_nm = item.stk_nm;
+            const currentSell = mergedDataMap.get(stkCd).OrgNetSell || 0;
+            mergedDataMap.get(stkCd).OrgNetSell =
+              currentSell + parseInt(item.netslmt);
+          });
+          await delay(2000);
+
+          // 거래대금 데이터
           const pricaKospiData = await fetchPricaKospi(token);
           pricaKospiData.forEach((item) => {
             const existingItem = mergedDataMap.get(item.stk_cd);
@@ -427,6 +485,7 @@
           });
           await delay(2000);
 
+          // 거래량 데이터
           const quantityKospiData = await fetchKospiQuantity(token);
           quantityKospiData.forEach((item) => {
             const existingItem = mergedDataMap.get(item.stk_cd);
@@ -458,19 +517,35 @@
 
           // 최종 데이터 계산 및 정렬
           const finalData = Array.from(mergedDataMap.values()).map((item) => {
-            const ForNetBuy = parseInt(item.ForNetBuy) || 0;
-            const ForNetSell = parseInt(item.ForNetSell) || 0;
-            const OrgNetBuy = parseInt(item.OrgNetBuy) || 0;
-            const OrgNetSell = parseInt(item.OrgNetSell) || 0;
-            const totalNetSum =
-              ForNetBuy + ForNetSell + (OrgNetBuy + OrgNetSell);
-            const amount =
-              item.cur_prc !== undefined ? item.cur_prc * totalNetSum : 0;
-            return { ...item, totalNetSum: totalNetSum, amount: amount };
+            const programNet = parseInt(item.Program) || 0;
+            const orgNetBuy = parseInt(item.OrgNetBuy) || 0;
+            const orgNetSell = parseInt(item.OrgNetSell) || 0;
+
+            const totalOrgNet = orgNetBuy + orgNetSell;
+
+            const programAmountInHunds = programNet / 100;
+            const orgAmountInHundMs =
+              (totalOrgNet * (item.cur_prc || 0)) / 100000000;
+
+            // Calculate Market Cap (시가총액)
+            const marketCap =
+              item.cur_prc && item.outstandingShares
+                ? (item.cur_prc * item.outstandingShares) / 100000000
+                : 0;
+
+            const totalForSorting = programAmountInHunds + orgAmountInHundMs;
+
+            return {
+              ...item,
+              programAmountInHunds: programAmountInHunds,
+              orgAmountInHundMs: orgAmountInHundMs,
+              totalForSorting: totalForSorting,
+              marketCap: marketCap,
+            };
           });
 
-          // 양매수대금(amount)을 기준으로 내림차순 정렬
-          finalData.sort((a, b) => b.amount - a.amount);
+          // 기관 순매수대금(org)을 기준으로 내림차순 정렬
+          finalData.sort((a, b) => b.totalForSorting - a.totalForSorting);
 
           renderTable(finalData);
           updateTimestamp();
@@ -480,6 +555,50 @@
             "output"
           ).innerHTML = `<div class="error">데이터 로딩 중 에러가 발생했습니다: ${e.message}</div>`;
         }
+      }
+
+      function renderTable(dataList) {
+        const table = document.createElement("table");
+        table.innerHTML = `
+    <thead>
+      <tr>
+        <th>종목코드</th>
+        <th>종목명</th>
+        <th>현재가</th>
+        <th>등락률</th>
+        <th>거래량</th>
+        <th>프로그램(억)</th>
+        <th>기관(억)</th>
+        <th>시가총액(억)</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${dataList
+        .map((item) => {
+          const fluRt = parseFloat(item.flu_rt);
+          const formattedFluRt = !isNaN(fluRt) ? fluRt.toFixed(2) : "";
+          const programAmount = (item.programAmountInHunds ?? 0).toFixed(0);
+          const orgAmount = (item.orgAmountInHundMs ?? 0).toFixed(0);
+          const marketCap = (item.marketCap ?? 0).toFixed(0);
+
+          return `
+            <tr>
+              <td>${item.stk_cd}</td>
+              <td>${item.stk_nm}</td>
+              <td>${item.cur_prc !== undefined ? item.cur_prc : ""}</td>
+              <td>${formattedFluRt}</td>
+              <td>${item.trde_qty !== undefined ? item.trde_qty : ""}</td>
+              <td>${programAmount}</td>
+              <td>${orgAmount}</td>
+              <td>${marketCap}</td>
+            </tr>
+          `;
+        })
+        .join("")}
+    </tbody>
+  `;
+        document.getElementById("output").innerHTML = "";
+        document.getElementById("output").appendChild(table);
       }
 
       updateData();

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Kiwoom 거래량상위</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+      .container {
+        max-width: 900px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        text-align: center;
+        color: #333;
+      }
+      #timestamp {
+        text-align: right;
+        font-size: 0.9em;
+        color: #777;
+        margin-bottom: 20px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        font-size: 0.9em;
+      }
+      th,
+      td {
+        /* padding: 12px; */
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+      th {
+        background-color: #f2f2f2;
+        color: #555;
+      }
+      tr:hover {
+        background-color: #f9f9f9;
+      }
+      .loading {
+        text-align: center;
+        color: #888;
+      }
+      .error {
+        color: red;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>키움증권 거래량상위</h1>
+      <div id="timestamp"></div>
+      <div id="output"></div>
+    </div>
+
+    <script>
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, "0");
+      const day = String(today.getDate()).padStart(2, "0");
+      const formattedDate = `${year}${month}${day}`;
+
+      const accessParams = {
+        grant_type: "client_credentials",
+        appkey: "oJ5S3eaEUVsSaxPX7vkiOPjOI9_yvkFGm3lwAkd_fAg",
+        secretkey: "lA1nom_3Ql1TX1rUpppvwhRJBuEQ44cECAYn7lCGgps",
+      };
+
+      const KospiProgram = {
+        dt: formattedDate, //YYYYMMDD
+        mrkt_tp: "P00101", //P00101:코스피, P10102:코스닥
+        stex_tp: "3", // 1:KRX, 2:NXT 3.통합
+      };
+
+      const KosdaqProgram = {
+        dt: formattedDate, //YYYYMMDD
+        mrkt_tp: "P10102", //P00101:코스피, P10102:코스닥
+        stex_tp: "3", //1:KRX, 2:NXT 3.통합
+      };
+
+      async function fetchToken() {
+        const url = "https://mockapi.kiwoom.com/oauth2/token";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json;charset=UTF-8" },
+          body: JSON.stringify(accessParams),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        return data.token;
+      }
+
+      async function fetchProgram(token, params) {
+        const url = "https://mockapi.kiwoom.com/api/dostk/stkinfo";
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            authorization: `Bearer ${token}`,
+            "api-id": "ka90004",
+            "cont-yn": "Y",
+            "next-key": "",
+          },
+          body: JSON.stringify(params),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        const rawGroupData = data.stk_prm_trde_prst || [];
+
+        const formattedData = rawGroupData.map((item) => ({
+          stk_cd: item.stk_cd.replace(/[^0-9]/g, ""),
+          stk_nm: item.stk_nm,
+          cur_prc: Math.abs(item.cur_prc),
+          buy_cntr_amt: parseFloat(item.buy_cntr_amt).toFixed(),
+          sel_cntr_amt: parseFloat(item.sel_cntr_amt).toFixed(),
+          netprps_prica: parseFloat(item.netprps_prica).toFixed(),
+        }));
+
+        return formattedData;
+      }
+
+      function renderTable(dataList) {
+        const table = document.createElement("table");
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>종목코드</th>
+              <th>종목명</th>
+              <th>현재가</th>
+              <th>매수체결금액</th>
+              <th>매도체결수량</th>
+              <th>순매수대금</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${dataList
+              .map(
+                (item) => `
+              <tr>
+                <td>${item.stk_cd}</td>
+                <td>${item.stk_nm}</td>
+                <td>${item.cur_prc}</td>
+                <td>${item.buy_cntr_amt}</td>
+                <td>${item.sel_cntr_amt}</td>
+                <td>${item.netprps_prica}</td>
+              </tr>
+            `
+              )
+              .join("")}
+          </tbody>
+        `;
+        document.getElementById("output").innerHTML = "";
+        document.getElementById("output").appendChild(table);
+      }
+
+      function delay(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
+      function updateTimestamp(message = "") {
+        const now = new Date();
+        document.getElementById(
+          "timestamp"
+        ).innerText = `${message} 최종 업데이트: ${now.toLocaleTimeString()}`;
+      }
+
+      async function updateData() {
+        try {
+          updateTimestamp("업데이트 중... ");
+          const token = await fetchToken();
+          const mergedDataMap = new Map();
+
+          // Fetch KospiProgram data
+          const KospiProgramData = await fetchProgram(token, KospiProgram);
+          KospiProgramData.forEach((item) => {
+            if (!mergedDataMap.has(item.stk_cd)) {
+              mergedDataMap.set(item.stk_cd, {
+                stk_cd: item.stk_cd,
+                stk_nm: item.stk_nm,
+                cur_prc: item.cur_prc,
+                buy_cntr_amt: parseFloat(item.buy_cntr_amt).toFixed(),
+                sel_cntr_amt: parseFloat(item.sel_cntr_amt).toFixed(),
+                netprps_prica: parseFloat(item.netprps_prica).toFixed(),
+              });
+            }
+            const existingItem = mergedDataMap.get(item.stk_cd);
+          });
+          await delay(2000);
+
+          // Fetch KosdaqProgram data
+          const KosdaqProgramData = await fetchProgram(token, KosdaqProgram);
+          KosdaqProgramData.forEach((item) => {
+            if (!mergedDataMap.has(item.stk_cd)) {
+              mergedDataMap.set(item.stk_cd, {
+                stk_cd: item.stk_cd,
+                stk_nm: item.stk_nm,
+                cur_prc: item.cur_prc,
+                buy_cntr_amt: parseFloat(item.buy_cntr_amt).toFixed(),
+                sel_cntr_amt: parseFloat(item.sel_cntr_amt).toFixed(),
+                netprps_prica: parseFloat(item.netprps_prica).toFixed(),
+              });
+            }
+            const existingItem = mergedDataMap.get(item.stk_cd);
+          });
+
+          const finalData = Array.from(mergedDataMap.values());
+          renderTable(finalData);
+          updateTimestamp();
+        } catch (e) {
+          console.error("Error during updateData:", e);
+          document.getElementById(
+            "output"
+          ).innerHTML = `<div class="error">데이터 로딩 중 에러가 발생했습니다: ${e.message}</div>`;
+        }
+      }
+
+      updateData();
+      setInterval(updateData, 10000); // 10초마다 업데이트
+    </script>
+  </body>
+</html>

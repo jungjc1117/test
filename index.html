@@ -2800,11 +2800,11 @@
             });
           }
         });
-        // 유통총액이 2000억 이하인 종목만 필터링
+        // 유통총액이 1000억 이하인 종목만 필터링
         const filteredList = combinedList.filter((item) => {
           const marketCap =
             (parseInt(item.유통주식수) * parseInt(item.price)) / 100000000;
-          return marketCap >= 2000;
+          return marketCap >= 1000;
         });
         return filteredList;
       }
