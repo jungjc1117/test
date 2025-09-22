@@ -530,7 +530,7 @@
             // Calculate Market Cap (시가총액)
             const marketCap =
               item.cur_prc && item.outstandingShares
-                ? (item.cur_prc * item.outstandingShares) / 100000000
+                ? (item.cur_prc * item.outstandingShares) / 100000
                 : 0;
 
             const totalForSorting = programAmountInHunds + orgAmountInHundMs;
