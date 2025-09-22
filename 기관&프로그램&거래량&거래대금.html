@@ -334,6 +334,18 @@
         ).innerText = `${message} 최종 업데이트: ${now.toLocaleTimeString()}`;
       }
 
+      function copyToClipboard(text) {
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            // alert(`'${text}' 종목코드가 클립보드에 복사되었습니다!`);
+          })
+          .catch((err) => {
+            console.error("클립보드 복사 실패:", err);
+            alert("클립보드 복사에 실패했습니다.");
+          });
+      }
+
       async function updateData() {
         try {
           updateTimestamp("업데이트 중... ");
@@ -550,7 +562,13 @@
 
           return `
             <tr>
-              <td>${item.stk_cd}</td>
+              <td>
+                  <button class="copy-button" onclick="copyToClipboard('${
+                    item.stk_cd
+                  }')">
+                      ${item.stk_cd}
+                  </button>
+              </td>
               <td>${item.stk_nm}</td>
               <td>${item.cur_prc !== undefined ? item.cur_prc : ""}</td>
               <td>${formattedFluRt}</td>
