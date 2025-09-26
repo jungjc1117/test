@@ -2,9 +2,9 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <title>실시간 주가 데이터 테이블</title>
+    <title>가상 실시간 주가 데이터 테이블 (Mocking)</title>
     <style>
-      /* 웹소켓 수신 데이터를 표시할 간단한 테이블 스타일 */
+      /* 테이블 스타일은 이전과 동일 */
       #stock-table {
         width: 80%;
         margin: 20px auto;
@@ -38,7 +38,7 @@
   </head>
   <body>
     <div class="status-bar">
-      웹소켓 상태: <span id="ws-status">연결 시도 중...</span>
+      상태: <span id="ws-status">가상 데이터 업데이트 중... 🔄</span>
     </div>
 
     <table id="stock-table">
@@ -53,159 +53,103 @@
       </thead>
       <tbody id="table-body">
         <tr>
-          <td colspan="5">데이터 수신 대기 중...</td>
+          <td colspan="5">초기 데이터 로드 중...</td>
         </tr>
       </tbody>
     </table>
 
     <script>
-      // --- 1. 가상 Access Token 발급 함수 (토큰 로직 가정) ---
-      function getAccessToken() {
-        // 실제 구현에서는 서버에서 토큰을 받아오거나, 로컬 저장소에서 읽어옵니다.
-        console.log("Access Token 발급 (가상)...");
-        return "Bearer_FAKE_ACCESS_TOKEN_1234567890";
-      }
-
-      // --- 2. 웹소켓 연결 및 데이터 처리 로직 ---
-      function connectWebSocket() {
-        const token = getAccessToken();
-
-        // 실제 웹소켓 URL과 인증 토큰을 포함한 쿼리 파라미터
-        // (참고: 웹소켓 표준은 헤더를 통한 토큰 전송을 지원하지 않아 쿼리 파라미터를 많이 사용)
-        const wsUrl = `ws://localhost:8080/ws/realtime-data?token=${token
-          .split("_")
-          .pop()}`;
-        const ws = new WebSocket(wsUrl);
-        const tableBody = document.getElementById("table-body");
-        const statusElement = document.getElementById("ws-status");
-
-        // 연결 이벤트
-        ws.onopen = () => {
-          statusElement.textContent = "연결 성공! 🟢";
-          console.log("WebSocket 연결 성공. Access Token 전송 완료.");
-          // 서버에 구독 메시지 전송 (예시)
-          ws.send(
-            JSON.stringify({
-              action: "subscribe",
-              symbols: ["AAPL", "MSFT", "GOOG"],
-            })
-          );
-        };
-
-        // 메시지 수신 이벤트 (가장 중요한 부분)
-        ws.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-
-          // 수신된 데이터를 테이블에 업데이트
-          updateTable(data.stocks || [data]);
-        };
-
-        // 에러 이벤트
-        ws.onerror = (error) => {
-          statusElement.textContent = "에러 발생 🔴";
-          console.error("WebSocket Error:", error);
-        };
-
-        // 연결 종료 이벤트
-        ws.onclose = () => {
-          statusElement.textContent = "연결 종료 🟡. 5초 후 재연결 시도...";
-          console.log("WebSocket 연결 종료.");
-          // 일정 시간 후 재연결 시도
-          setTimeout(connectWebSocket, 5000);
-        };
-      }
-
-      // --- 3. 테이블 UI 업데이트 함수 (기존 컴포넌트의 역할) ---
-      // 이 함수는 기존 JS 코드의 테이블 컴포넌트(e.g., <j.A>)가 데이터를 받아서
-      // HTML 요소를 조작하는 역할과 유사합니다.
-      function updateTable(stocks) {
-        const body = document.getElementById("table-body");
-        body.innerHTML = ""; // 테이블 내용 초기화
-
-        stocks.forEach((stock) => {
-          const row = body.insertRow();
-
-          // 데이터에서 필요한 필드 추출 (기존 코드 구조 참조)
-          const symbol = stock.symbol || "N/A";
-          const last = stock.last || "0.00";
-          const change = stock.changeAsNumber || 0;
-          const changePercent = stock.changePercentAsNumber || 0;
-          const volume = stock.volumeAbbreviated || "0K";
-
-          // 변동률에 따른 CSS 클래스 결정
-          const changeClass =
-            change > 0 ? "positive" : change < 0 ? "negative" : "";
-
-          // 셀 추가 및 데이터 삽입
-          row.insertCell().textContent = symbol;
-          row.insertCell().textContent = last;
-
-          const changeCell = row.insertCell();
-          changeCell.textContent = change.toFixed(2);
-          changeCell.classList.add(changeClass);
-
-          const percentCell = row.insertCell();
-          percentCell.textContent = `${changePercent.toFixed(2)}%`;
-          percentCell.classList.add(changeClass);
-
-          row.insertCell().textContent = volume;
-        });
-      }
-
-      // --- 4. 초기 실행 ---
-      // 가상의 초기 데이터로 테이블을 채우고, 웹소켓 연결 시작
-      const initialFakeData = [
+      // 현재 추적 중인 종목 데이터 (실제 웹소켓에서 수신하는 데이터를 대체)
+      let trackedStocks = [
         {
           symbol: "AAPL",
-          last: "175.20",
+          last: 175.2,
           changeAsNumber: 1.5,
           changePercentAsNumber: 0.86,
           volumeAbbreviated: "15M",
         },
         {
           symbol: "MSFT",
-          last: "405.50",
+          last: 405.5,
           changeAsNumber: -0.8,
           changePercentAsNumber: -0.2,
           volumeAbbreviated: "12M",
         },
         {
           symbol: "GOOG",
-          last: "150.10",
+          last: 150.1,
           changeAsNumber: 0.0,
           changePercentAsNumber: 0.0,
           volumeAbbreviated: "5M",
         },
       ];
-      updateTable(initialFakeData);
-      connectWebSocket(); // 웹소켓 연결 시작
 
-      // 가상 메시지 시뮬레이션 (실제로는 ws.onmessage에서 수신됨)
-      setTimeout(() => {
-        updateTable([
-          {
-            symbol: "AAPL",
-            last: "175.90",
-            changeAsNumber: 2.2,
-            changePercentAsNumber: 1.26,
-            volumeAbbreviated: "15.5M",
-          },
-          {
-            symbol: "GOOG",
-            last: "150.05",
-            changeAsNumber: -0.05,
-            changePercentAsNumber: -0.03,
-            volumeAbbreviated: "5.2M",
-          },
-          {
-            symbol: "TSLA",
-            last: "250.00",
-            changeAsNumber: 10.0,
-            changePercentAsNumber: 4.16,
-            volumeAbbreviated: "8M",
-          }, // 새로운 종목 추가
-        ]);
-      }, 3000);
+      // --- 1. 테이블 UI 업데이트 함수 ---
+      function updateTable(stocks) {
+        const body = document.getElementById("table-body");
+        body.innerHTML = "";
+
+        stocks.forEach((stock) => {
+          const row = body.insertRow();
+
+          const change = stock.changeAsNumber;
+          const changeClass =
+            change > 0 ? "positive" : change < 0 ? "negative" : "";
+
+          row.insertCell().textContent = stock.symbol;
+          row.insertCell().textContent = stock.last.toFixed(2);
+
+          const changeCell = row.insertCell();
+          changeCell.textContent = change.toFixed(2);
+          changeCell.classList.add(changeClass);
+
+          const percentCell = row.insertCell();
+          percentCell.textContent = `${stock.changePercentAsNumber.toFixed(
+            2
+          )}%`;
+          percentCell.classList.add(changeClass);
+
+          row.insertCell().textContent = stock.volumeAbbreviated;
+        });
+      }
+
+      // --- 2. 가상 데이터 생성 및 업데이트 로직 (웹소켓 대체) ---
+      function mockWebSocketData() {
+        // 1. 모든 종목의 주가 및 변동률을 랜덤하게 업데이트합니다.
+        trackedStocks = trackedStocks.map((stock) => {
+          const randomChange = (Math.random() * 2 - 1) * 0.5; // -0.5 ~ +0.5 사이의 랜덤 변화
+          const newLast = parseFloat((stock.last + randomChange).toFixed(2));
+
+          // 새로운 변동값과 변동률 계산 (간단화)
+          const newChange = parseFloat(
+            (stock.changeAsNumber + randomChange).toFixed(2)
+          );
+          const newChangePercent = parseFloat(
+            ((newChange / (newLast - newChange)) * 100).toFixed(2)
+          );
+
+          return {
+            ...stock,
+            last: newLast,
+            changeAsNumber: newChange,
+            changePercentAsNumber: newChangePercent,
+            volumeAbbreviated:
+              stock.volumeAbbreviated.replace(/[MK]/, "") * 1 +
+              (Math.random() < 0.5 ? 0.1 : -0.1) +
+              "M",
+          };
+        });
+
+        // 2. 3초마다 새로운 가상 주가로 테이블 업데이트
+        updateTable(trackedStocks);
+
+        // 3. 재귀적으로 함수를 호출하여 지속적인 업데이트 시뮬레이션
+        setTimeout(mockWebSocketData, 3000);
+      }
+
+      // --- 3. 초기 실행 ---
+      updateTable(trackedStocks);
+      mockWebSocketData(); // 가상 데이터 업데이트 시작
     </script>
   </body>
 </html>
